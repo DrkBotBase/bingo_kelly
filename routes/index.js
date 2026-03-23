@@ -24,9 +24,16 @@ router.get('/ping', (req, res) => {
 
 router.get('/api/juego/estado', async (req, res) => {
     try {
-        const juego = await Juego.findOne().sort({ createdAt: -1 });
+        // Usamos .lean() para obtener un objeto JS plano
+        const juego = await Juego.findOne().sort({ createdAt: -1 }).lean();
+        
         res.json({ 
-            juego: juego || { estado: 'esperando', bolasCantadas: [] }
+            success: true,
+            juego: juego || { 
+                estado: 'esperando', 
+                bolasCantadas: [], 
+                ganadores: [] // Estructura consistente
+            }
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

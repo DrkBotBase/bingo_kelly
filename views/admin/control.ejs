@@ -450,11 +450,20 @@ document.addEventListener('click', function(event) {
                         <button onclick="mostrarPorLetra('O')" class="filtro-letra bg-purple-500 text-white border-purple-600 hover:bg-purple-600" id="filtro-o">O</button>
                     </div>
                     <div id="historialCompleto" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-64 overflow-y-auto p-2 bg-gray-50 rounded-xl">
-                        <% if (juego && juego.ganador && juego.ganador.cartonId) { %>
+                        <% if (juego && juego.ganadores && juego.ganadores.length > 0) { %>
+                            <% juego.ganadores.forEach(g => { %>
+                                <div class="col-span-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse">
+                                    <i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> 
+                                    GANADOR: Cartón #<%= g.cartonId %> (<%= g.tipo || juego.modalidad %>)
+                                </div>
+                            <% }); %>
+                        <% } else if (juego && juego.ganador && juego.ganador.cartonId) { %>
                             <div class="col-span-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse">
-                                <i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #<%= juego.ganador.cartonId %> (<%= juego.ganador.tipo %>)
+                                <i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> 
+                                GANADOR: Cartón #<%= juego.ganador.cartonId %> (<%= juego.ganador.tipo %>)
                             </div>
                         <% } %>
+                    
                         <% if (juego && juego.bolasCantadas && juego.bolasCantadas.length > 0) { 
                             const bolasReversa = juego.bolasCantadas.slice().reverse();
                             bolasReversa.forEach(bola => { 
@@ -611,9 +620,22 @@ document.addEventListener('click', function(event) {
             notif.classList.remove('translate-x-0');
         }
         
-        socket.on('juego-iniciado', (data) => {
+socket.on('juego-iniciado', (data) => {
             juegoActivo = true;
             juegoPausado = false;
+            
+            const mensajeGanador = document.getElementById('mensajeGanadorAdmin');
+            if (mensajeGanador) mensajeGanador.remove();
+            const historial = document.getElementById('historialCompleto');
+            if (historial) {
+                historial.innerHTML = '<p class="col-span-full text-center text-gray-400 py-4 italic">Esperando primera bola...</p>';
+            }
+            const ultimaBolaDisplay = document.getElementById('ultimaBolaDisplay');
+            if (ultimaBolaDisplay) ultimaBolaDisplay.textContent = '--';
+            
+            const totalBolasDisplay = document.getElementById('totalBolasDisplay');
+            if (totalBolasDisplay) totalBolasDisplay.textContent = '0';
+
             actualizarBotones('jugando', data.modalidad);
             document.getElementById('modalidad').value = data.modalidad;
             document.getElementById('modalidad').disabled = true;
@@ -637,28 +659,44 @@ document.addEventListener('click', function(event) {
             habilitarControlesBola(true);
         });
         
-        socket.on('juego-terminado', (data) => {
+socket.on('juego-terminado', (data) => {
             juegoActivo = false;
             juegoPausado = false;
             actualizarBotones('finalizado');
             document.getElementById('modalidad').disabled = false;
 
-            if (data.cartonId && data.tipo) {
-                mostrarNotificacion(`🏆 Ganador: Cartón #${data.cartonId} (${data.tipo})`, 'success', 5000);
-
-                const historial = document.getElementById('historialCompleto');
-                if (historial.children.length === 1 && historial.children[0].tagName === 'P') {
-                    historial.innerHTML = '';
+            const historial = document.getElementById('historialCompleto');
+            
+            if ((data.ganadores && data.ganadores.length > 0) || data.cartonId) {
+                mostrarNotificacion(data.mensaje, 'success', 10000);
+                if (historial) {
+                    if (historial.children.length === 1 && historial.children[0].tagName === 'P') {
+                        historial.innerHTML = '';
+                    }
+                    const ganadorEl = document.createElement('div');
+                    ganadorEl.id = 'mensajeGanadorAdmin';
+                    ganadorEl.className = 'col-span-full bg-yellow-100 text-yellow-800 p-4 rounded-xl font-bold text-center border-2 border-yellow-400 mb-4 shadow-md animate-pulse';
+                    ganadorEl.innerHTML = `
+                        <div class="text-2xl mb-1"><i class="fa-solid fa-trophy text-yellow-600"></i></div>
+                        <div class="text-lg">${data.mensaje}</div>
+                    `;
+                    historial.prepend(ganadorEl);
                 }
-                const ganadorEl = document.createElement('div');
-                ganadorEl.className = 'col-span-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse';
-                ganadorEl.innerHTML = `<i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #${data.cartonId} (${data.tipo})`;
-                historial.prepend(ganadorEl);
             } else {
                 mostrarNotificacion(data.mensaje || '🏁 Juego finalizado', 'info');
             }
 
             habilitarControlesBola(false);
+        });
+
+socket.on('reiniciar-cartones', () => {
+            const mensajeGanador = document.getElementById('mensajeGanadorAdmin');
+            if (mensajeGanador) mensajeGanador.remove();
+            
+            const historial = document.getElementById('historialCompleto');
+            if (historial) {
+                historial.innerHTML = '<p class="col-span-full text-center text-gray-400 py-4 italic">Esperando primera bola...</p>';
+            }
         });
         
         socket.on('nueva-bola', (data) => {
@@ -803,10 +841,13 @@ document.addEventListener('click', function(event) {
                 mostrarNotificacion('El juego no está activo', 'warning');
                 return;
             }
-            
-            const numero = Math.floor(Math.random() * 75) + 1;
-            socket.emit('cantar-bola', { numero });
+            socket.emit('solicitar-bola-aleatoria');
         }
+        
+        socket.on('confirmar-bola-sugerida', (data) => {
+            socket.emit('cantar-bola', { numero: data.numero });
+        });
+
         
         function emergenciaStop() {
             if (confirm('¿Seguro que quieres detener el juego? Esta acción no se puede deshacer.')) {

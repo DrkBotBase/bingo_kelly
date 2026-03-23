@@ -15,6 +15,11 @@ const juegeSchema = new mongoose.Schema({
   ultimaBola: Number,
   cartonesActivos: [Number],
   cartonesDisponibles: [Number],
+  ganadores: [{
+    cartonId: Number,
+    tipo: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
   ganador: {
     cartonId: Number,
     tipo: String,

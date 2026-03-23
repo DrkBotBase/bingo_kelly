@@ -1,6 +1,7 @@
 const Juego = require('../models/Juego');
 const Carton = require('../models/Carton');
 
+/*
 async function verificarGanador(juegoId, cartonIdEspecifico = null) {
   try {
     const juego = await Juego.findById(juegoId);
@@ -33,6 +34,41 @@ async function verificarGanador(juegoId, cartonIdEspecifico = null) {
     }
     
     return null;
+  } catch (error) {
+    console.error("Error en verificarGanador:", error);
+    return null;
+  }
+}
+*/
+async function verificarGanador(juegoId, cartonIdEspecifico = null) {
+  try {
+    const juego = await Juego.findById(juegoId);
+    if (!juego || juego.estado !== 'jugando') return null;
+    
+    let query = cartonIdEspecifico 
+      ? { numeroCarton: cartonIdEspecifico } 
+      : { numeroCarton: { $in: juego.cartonesActivos } };
+    
+    const cartones = await Carton.find(query);
+    const bolasCantadas = juego.bolasCantadas;
+    
+    let ganadores = [];
+    
+    for (const carton of cartones) {
+      if (carton.modoMarcado === 'automatico') {
+        await marcarAutomatico(carton, bolasCantadas);
+      }
+      
+      if (verificarModalidad(carton, juego.modalidad)) {
+        ganadores.push({
+          cartonId: carton.numeroCarton,
+          tipo: juego.modalidad
+        });
+      }
+    }
+    
+    return ganadores.length > 0 ? ganadores : null;
+    
   } catch (error) {
     console.error("Error en verificarGanador:", error);
     return null;

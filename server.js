@@ -297,7 +297,33 @@ socket.on('iniciar-juego', async (data) => {
             console.error('Error finalizando juego:', error);
         }
     });
-    
+
+socket.on('solicitar-bola-aleatoria', async () => {
+        try {
+            if (!session.admin) return;
+
+            const juego = await Juego.findOne({ estado: 'jugando' });
+            if (!juego) {
+                socket.emit('error', { mensaje: 'No hay juego activo' });
+                return;
+            }
+            const todasLasPosibles = Array.from({ length: 75 }, (_, i) => i + 1);
+            const bolasDisponibles = todasLasPosibles.filter(num => 
+                !juego.bolasCantadas.includes(num)
+            );
+
+            if (bolasDisponibles.length === 0) {
+                socket.emit('error', { mensaje: '¡Ya salieron todas las bolas!' });
+                return;
+            }
+            const indiceAleatorio = Math.floor(Math.random() * bolasDisponibles.length);
+            const numeroElegido = bolasDisponibles[indiceAleatorio];
+            
+            socket.emit('confirmar-bola-sugerida', { numero: numeroElegido });
+        } catch (error) {
+            console.error('Error generando bola aleatoria:', error);
+        }
+    });
 socket.on('cantar-bola', async (data) => {
     try {
         if (!session.admin) {
@@ -357,21 +383,33 @@ socket.on('cantar-bola', async (data) => {
             bolasCantadas: juego.bolasCantadas
         });
         
-        const ganador = await verificarGanador(juego._id);
+        const ganadores = await verificarGanador(juego._id);
         
-        if (ganador) {
+        if (ganadores && ganadores.length > 0) {
             juego.estado = 'finalizado';
+            
+            juego.ganadores = ganadores.map(g => ({
+              cartonId: g.cartonId,
+              tipo: g.tipo,
+              timestamp: new Date()
+            }));
             juego.ganador = {
-                cartonId: ganador.cartonId,
-                tipo: ganador.tipo,
+                cartonId: ganadores[0].cartonId,
+                tipo: ganadores[0].tipo,
                 timestamp: new Date()
             };
             await juego.save();
             
+            const listaIds = ganadores.map(g => `#${g.cartonId}`).join(', ');
+            const mensajeFinal = ganadores.length > 1 
+                ? `🎉 ¡BINGO MÚLTIPLE! Ganaron los cartones: ${listaIds}`
+                : `🎉 ¡BINGO! Ganó el cartón #${ganadores[0].cartonId}`;
+            
             io.emit('juego-terminado', {
-                mensaje: `🎉 ¡BINGO! Ganó el cartón #${ganador.cartonId}`,
-                cartonId: ganador.cartonId,
-                tipo: ganador.tipo
+                mensaje: mensajeFinal,
+                ganadores: ganadores,
+                cartonId: ganadores[0].cartonId,
+                tipo: ganadores[0].tipo
             });
         }
         
@@ -679,14 +717,15 @@ socket.on('cantar-bola', async (data) => {
 app.get('/api/juego/estado/:numeroCarton', async (req, res) => {
     try {
         const numeroCarton = parseInt(req.params.numeroCarton);
-        const juego = await Juego.findOne().sort({ createdAt: -1 });
-        const carton = await Carton.findOne({ numeroCarton });
+        const juego = await Juego.findOne().sort({ createdAt: -1 }).lean();
+        const carton = await Carton.findOne({ numeroCarton }).lean();
         
         res.json({
             juego: {
                 estado: juego?.estado || 'esperando',
                 modalidad: juego?.modalidad || null,
-                bolasCantadas: juego?.bolasCantadas || []
+                bolasCantadas: juego?.bolasCantadas || [],
+                ganadores: juego?.ganadores || [] 
             },
             carton: {
                 marcados: carton?.marcados || [],

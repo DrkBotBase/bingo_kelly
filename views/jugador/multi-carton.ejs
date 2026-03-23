@@ -74,7 +74,7 @@
     </style>
 </head>
 <body class="text-gray-800">
-    <div class="card-glass sticky top-0 z-10 shadow-lg">
+    <div class="card-glass sticky top-0 z-20 shadow-lg">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center space-x-4">
@@ -398,86 +398,101 @@
             mostrarNotificación(`Modo: ${modoAutomatico ? 'Automático' : 'Manual'}`, 'purple');
         }
         
-        function marcarAutomatico(numero) {
-            let huboCambios = false;
+function marcarAutomatico(numero) {
+    let huboCambios = false;
+    
+    cartones.forEach(carton => {
+        const celda = document.querySelector(`[data-carton="${carton.numeroCarton}"][data-numero="${numero}"]`);
+        
+        if (celda) {
+            const posicion = celda.dataset.pos;
             
-            cartones.forEach(carton => {
-                const celdas = document.querySelectorAll(`[data-carton="${carton.numeroCarton}"][data-numero="${numero}"]`);
+            if (!numerosMarcados[carton.numeroCarton]?.has(posicion)) {
+                celda.classList.add('marcado');
                 
-                celdas.forEach(celda => {
-                    const posicion = celda.dataset.pos;
-                    
-                    if (!numerosMarcados[carton.numeroCarton]?.has(posicion)) {
-                        celda.classList.add('marcado');
-                        
-                        if (!numerosMarcados[carton.numeroCarton]) {
-                            numerosMarcados[carton.numeroCarton] = new Set();
-                        }
-                        numerosMarcados[carton.numeroCarton].add(posicion);
-                        huboCambios = true;
-
-                        socket.emit('marcar-manual-multi', {
-                            codigo: usuario.codigo,
-                            cartonId: carton.numeroCarton,
-                            posicion: posicion
-                        });
-                    }
-                });
-                
-                const contador = document.getElementById(`contador-${carton.numeroCarton}`);
-                if (contador && numerosMarcados[carton.numeroCarton]) {
-                    contador.textContent = numerosMarcados[carton.numeroCarton].size;
+                if (!numerosMarcados[carton.numeroCarton]) {
+                    numerosMarcados[carton.numeroCarton] = new Set();
                 }
-            });
-            
-            if (huboCambios) {
-                guardarEstadoLocal();
-                actualizarProgresoGlobal();
+                numerosMarcados[carton.numeroCarton].add(posicion);
+                huboCambios = true;
+
+                socket.emit('marcar-manual-multi', {
+                    codigo: usuario.codigo,
+                    cartonId: carton.numeroCarton,
+                    posicion: posicion
+                });
             }
         }
+    });
+    
+    if (huboCambios) {
+        guardarEstadoLocal();
+        actualizarProgresoGlobal();
+    }
+}
         
-        async function cargarEstadoInicial() {
-            try {
-                const response = await fetch('/api/juego/estado');
-                const data = await response.json();
-                
-                if (data.juego) {
-                    juegoActivo = data.juego.estado === 'jugando';
-                    todasLasBolas = data.juego.bolasCantadas || [];
-                    
-                    document.getElementById('modalidadJuego').textContent = data.juego.modalidad || 'No definida';
-
-                    if (juegoActivo) {
-                        document.getElementById('estadoJuego').textContent = 'Jugando';
-                        document.getElementById('estadoJuego').className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800';
-                        
-                        if (todasLasBolas.length > 0) {
-                            const ultima = todasLasBolas[todasLasBolas.length - 1];
-                            document.getElementById('ultimaBola').textContent = formatearBola(ultima);
-                            actualizarHistorialBolas();
-                        }
-                    } else if (data.juego.estado === 'finalizado' && data.juego.ganador && data.juego.ganador.cartonId) {
-                        document.getElementById('estadoJuego').textContent = 'Finalizado';
-                        document.getElementById('estadoJuego').className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800';
-
-                        const cartonContainer = document.getElementById(`carton-${data.juego.ganador.cartonId}`);
-                        if (cartonContainer) {
-                            cartonContainer.classList.add('border-4', 'border-yellow-400', 'bg-yellow-50', 'transform', 'scale-105', 'shadow-2xl');
-
-                            const headerRow = cartonContainer.querySelector('.flex.justify-between.items-center');
+async function cargarEstadoInicial() {
+    try {
+        const response = await fetch('/api/juego/estado');
+        const data = await response.json();
+        
+        if (data && data.juego) {
+            const juego = data.juego;
+            juegoActivo = juego.estado === 'jugando';
+            todasLasBolas = juego.bolasCantadas || [];
+            
+            const modEl = document.getElementById('modalidadJuego');
+            if (modEl) modEl.textContent = juego.modalidad || 'No definida';
+            
+            const estadoEl = document.getElementById('estadoJuego');
+            if (estadoEl) {
+                if (juegoActivo) {
+                    estadoEl.textContent = 'Jugando';
+                    estadoEl.className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+                } else if (juego.estado === 'finalizado') {
+                    estadoEl.textContent = 'Finalizado';
+                    estadoEl.className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800';
+                } else if (juego.estado === 'pausado') {
+                    estadoEl.textContent = 'Pausado';
+                    estadoEl.className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800';
+                }
+            }
+            
+            if (todasLasBolas.length > 0) {
+                const ultima = todasLasBolas[todasLasBolas.length - 1];
+                const ultimaBolaEl = document.getElementById('ultimaBola');
+                if (ultimaBolaEl) ultimaBolaEl.textContent = formatearBola(ultima);
+                actualizarHistorialBolas();
+            }
+            
+            if (juego.estado === 'finalizado') {
+                const aplicarEstiloGanador = (id, tipo) => {
+                    const container = document.getElementById(`carton-${id}`);
+                    if (container) {
+                        container.classList.add('border-4', 'border-yellow-400', 'bg-yellow-50', 'transform', 'scale-105', 'shadow-2xl', 'z-10', 'relative');
+                        if (!container.querySelector('.ganador-badge-dinamico')) {
+                            const headerRow = container.querySelector('.flex.justify-between.items-center');
                             if (headerRow) {
-                                const ganadorBadge = document.createElement('div');
-                                ganadorBadge.className = 'w-full text-center bg-yellow-400 text-yellow-900 font-bold py-1 px-2 rounded mt-2 mb-2 animate-pulse';
-                                ganadorBadge.innerHTML = `<i class="fa-solid fa-trophy mr-1"></i> ¡GANADOR! (${data.juego.ganador.tipo})`;
-                                cartonContainer.insertBefore(ganadorBadge, headerRow.nextSibling);
+                                const badge = document.createElement('div');
+                                badge.className = 'ganador-badge-dinamico w-full text-center bg-yellow-400 text-yellow-900 font-bold py-1 px-2 rounded mt-2 mb-2 animate-pulse';
+                                badge.innerHTML = `<i class="fa-solid fa-trophy mr-1"></i> ¡GANADOR! (${tipo || juego.modalidad})`;
+                                container.insertBefore(badge, headerRow.nextSibling);
                             }
                         }
                     }
+                };
+                if (juego.ganadores && Array.isArray(juego.ganadores) && juego.ganadores.length > 0) {
+                    juego.ganadores.forEach(g => aplicarEstiloGanador(g.cartonId, g.tipo));
                 }
-            } catch (error) {
-                console.error('Error:', error);
+                else if (juego.ganador && juego.ganador.cartonId) {
+                    aplicarEstiloGanador(juego.ganador.cartonId, juego.ganador.tipo);
+                }
             }
         }
+    } catch (error) {
+        console.error('Error cargando estado inicial:', error);
+    }
+}
         
         function formatearBola(numero) {
             if (numero >= 1 && numero <= 15) return `B${numero}`;
@@ -543,29 +558,40 @@
             }, tiempo);
         }
         
-        socket.on('nueva-bola', (data) => {
-            const { numero, formato, bolasCantadas } = data;
-            
-            todasLasBolas = bolasCantadas;
-            document.getElementById('ultimaBola').textContent = formato;
-            document.getElementById('totalBolas').textContent = bolasCantadas.length;
-            
-            actualizarHistorialBolas();
-            
-            if (modoAutomatico && juegoActivo) {
-                marcarAutomatico(numero);
-            }
-            
-            guardarEstadoLocal();
-        });
+  socket.on('nueva-bola', (data) => {
+    const { numero, formato, bolasCantadas } = data;
+    
+    todasLasBolas = bolasCantadas;
+    juegoActivo = true;
+    
+    document.getElementById('ultimaBola').textContent = formato;
+    document.getElementById('totalBolas').textContent = bolasCantadas.length;
+    
+    actualizarHistorialBolas();
+    if (modoAutomatico) {
+        marcarAutomatico(numero);
+    }
+    
+    guardarEstadoLocal();
+});
         
-        socket.on('juego-iniciado', (data) => {
-            juegoActivo = true;
-            document.getElementById('estadoJuego').textContent = 'Jugando';
-            document.getElementById('estadoJuego').className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800';
-            document.getElementById('modalidadJuego').textContent = data ? data.modalidad : 'No definida';
-            mostrarNotificacion('🎮 Juego iniciado', 'green');
-        });
+socket.on('juego-iniciado', (data) => {
+    juegoActivo = true;
+    
+    const estadoEl = document.getElementById('estadoJuego');
+    estadoEl.textContent = 'Jugando';
+    estadoEl.className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+    document.getElementById('modalidadJuego').textContent = data ? data.modalidad : 'No definida';
+    
+    document.querySelectorAll('.carton-container').forEach(container => {
+        container.classList.remove('border-4', 'border-yellow-400', 'bg-yellow-50', 'scale-105', 'shadow-2xl');
+        const badgeOld = container.querySelector('.ganador-badge-dinamico');
+        if (badgeOld) badgeOld.remove();
+    });
+
+    mostrarNotificacion('🎮 Juego iniciado', 'green');
+});
+
         
         socket.on('juego-pausado', () => {
             juegoActivo = false;
@@ -574,28 +600,41 @@
             mostrarNotificacion('⏸️ Juego pausado', 'yellow');
         });
         
-        socket.on('juego-terminado', (data) => {
-            juegoActivo = false;
-            document.getElementById('estadoJuego').textContent = 'Finalizado';
-            document.getElementById('estadoJuego').className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800';
-            mostrarNotificacion(data.mensaje || 'Juego finalizado', 'gray');
+socket.on('juego-terminado', (data) => {
+    juegoActivo = false;
+    
+    const estadoEl = document.getElementById('estadoJuego');
+    estadoEl.textContent = 'Finalizado';
+    estadoEl.className = 'px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800';
+    
+    mostrarNotificacion(data.mensaje || 'Juego finalizado', 'gray', 5000);
+    
+    const marcarComoGanador = (id, tipo) => {
+        const cartonContainer = document.getElementById(`carton-${id}`);
+        if (cartonContainer) {
+            if (cartonContainer.querySelector('.ganador-badge-dinamico')) return;
 
-            if (data.cartonId) {
-                const cartonContainer = document.getElementById(`carton-${data.cartonId}`);
-                if (cartonContainer) {
-                    cartonContainer.classList.add('border-4', 'border-yellow-400', 'bg-yellow-50', 'transform', 'scale-105', 'shadow-2xl');
+            cartonContainer.classList.add('border-4', 'border-yellow-400', 'bg-yellow-50', 'transform', 'scale-105', 'shadow-2xl', 'z-10', 'relative');
 
-                    const headerRow = cartonContainer.querySelector('.flex.justify-between.items-center');
-                    if (headerRow) {
-                        const ganadorBadge = document.createElement('div');
-                        ganadorBadge.className = 'w-full text-center bg-yellow-400 text-yellow-900 font-bold py-1 px-2 rounded mt-2 mb-2 animate-pulse';
-                        ganadorBadge.innerHTML = `<i class="fa-solid fa-trophy mr-1"></i> ¡GANADOR! (${data.tipo})`;
-                        cartonContainer.insertBefore(ganadorBadge, headerRow.nextSibling);
-                    }
-                }
+            const headerRow = cartonContainer.querySelector('.flex.justify-between.items-center');
+            if (headerRow) {
+                const ganadorBadge = document.createElement('div');
+                ganadorBadge.className = 'ganador-badge-dinamico w-full text-center bg-yellow-400 text-yellow-900 font-bold py-1 px-2 rounded mt-2 mb-2 animate-pulse';
+                ganadorBadge.innerHTML = `<i class="fa-solid fa-trophy mr-1"></i> ¡GANADOR! (${tipo})`;
+                cartonContainer.insertBefore(ganadorBadge, headerRow.nextSibling);
             }
+        }
+    };
+    if (data.ganadores && Array.isArray(data.ganadores)) {
+        data.ganadores.forEach(g => {
+            marcarComoGanador(g.cartonId, g.tipo);
         });
-        
+    } 
+    else if (data.cartonId) {
+        marcarComoGanador(data.cartonId, data.tipo);
+    }
+});
+
         socket.on('reiniciar-cartones', () => {
             todasLasBolas = [];
             numerosMarcados = {}; 
