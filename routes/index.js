@@ -5,7 +5,11 @@ const Carton = require('../models/Carton');
 const { info } = require('../config');
 
 router.get('/', async (req, res) => {
-  res.render('landing', { name_page: info.name_page, dominio: info.dominio });
+  res.render('landing', {
+    name_page: info.name_page, 
+    dominio: info.dominio,
+    contacto: info.ws,
+    grupo: info.group });
 });
 router.get('/manifest.json', (req, res) => {
     res.type('application/manifest+json');
