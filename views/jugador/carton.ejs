@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cartón #<%= carton.numeroCarton %> - Bingo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .numero-carton {
+            transition: all 0.2s ease;
+        }
+        .numero-carton:hover:not(.marcado) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .bola-nueva {
+            animation: aparecer 0.5s ease;
+        }
+        @keyframes aparecer {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bg-green-500 {
+            background-color: #10b981 !important;
+        }
+        .bg-green-500.text-white {
+            color: white !important;
+        }
+        .numero-carton {
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="bg-white shadow-lg mb-6">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-2xl hover:opacity-75">🎰</a>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        Cartón #<%= carton.numeroCarton %>
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold" id="modalidadDisplay">
+                        <%= juego.modalidad || 'Esperando...' %>
+                    </span>
+                    
+                    <button id="toggleModo" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                        <span id="modoTexto">Modo Manual</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-4 sticky top-4">
+                    <h2 class="text-lg font-bold mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🎱</span>
+                        Bolas Cantadas
+                    </h2>
+                    
+                    <div class="text-center mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                        <div class="text-sm text-gray-600">Última bola</div>
+                        <div id="ultimaBola" class="text-5xl font-bold">
+                          <%= juego && juego.ultimaBola ? juego.ultimaBola : '-' %>
+                        </div>
+                    </div>
+                    
+                    <div class="flex mb-3 border-b">
+                        <button id="btnVerUltimas" class="flex-1 py-2 font-semibold text-blue-600 border-b-2 border-blue-600">
+                            Últimas 20
+                        </button>
+                        <button id="btnVerTodas" class="flex-1 py-2 text-gray-500 hover:text-blue-600">
+                            Ver todas
+                        </button>
+                    </div>
+                    
+                    <div id="vistaUltimas" class="block">
+                        <div id="bolasHistorial" class="flex flex-wrap gap-2 justify-center max-h-96 overflow-y-auto p-2">
+                            <% if (juego && juego.bolasCantadas && juego.bolasCantadas.length > 0) { %>
+                                <% 
+                                    const ultimasBolas = juego.bolasCantadas.slice(-20).reverse();
+                                %>
+                                <% ultimasBolas.forEach(bola => { 
+                                    const formato = bingoHelpers.numeroAFormatoBingo(bola);
+                                    const letra = bingoHelpers.getLetraBingo(bola);
+                                    const color = bingoHelpers.getColorPorLetra(letra);
+                                %>
+                                    <span class="w-14 h-14 rounded-full <%= color %> text-white flex items-center justify-center font-bold text-sm shadow-lg transform hover:scale-110 transition-transform">
+                                        <%= formato %>
+                                    </span>
+                                <% }); %>
+                            <% } else { %>
+                                <p class="text-gray-500 text-center w-full py-8">No hay bolas cantadas</p>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                    <div id="vistaTodas" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 flex justify-between items-center">
+                                <h3 class="text-xl font-bold">📋 Historial completo de bolas</h3>
+                                <button onclick="cerrarHistorialCompleto()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+                            </div>
+                            <div class="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+                                <div id="historialCompleto" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 text-right border-t">
+                                <span class="text-gray-600">Total: </span>
+                                <span id="totalBolasDisplay" class="font-bold text-xl"><%= juego ? juego.bolasCantadas.length : 0 %></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="abrirHistorialCompleto()" 
+                            class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105
+                                   <%= juego && juego.bolasCantadas && juego.bolasCantadas.length > 0 ? '' : 'hidden' %>"
+                            id="btnVerHistorialCompleto">
+                        📋 Ver historial completo
+                    </button>
+                    <div class="mt-4 text-center text-sm text-gray-600">
+                        Total: <span id="totalBolas"><%= juego && juego.bolasCantadas ? juego.bolasCantadas.length : 0 %></span> bolas
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h2 class="text-xl font-bold text-center mb-4">TU CARTÓN</h2>
+                <div class="grid grid-cols-5 gap-2 mb-6">
+                  <% 
+                      const estilosLetras = {
+                          'B': { color: 'bg-blue-500', shadow: 'shadow-blue-300' },
+                          'I': { color: 'bg-yellow-500', shadow: 'shadow-yellow-300' },
+                          'N': { color: 'bg-red-500', shadow: 'shadow-red-300' },
+                          'G': { color: 'bg-green-500', shadow: 'shadow-green-300' },
+                          'O': { color: 'bg-purple-500', shadow: 'shadow-purple-300' }
+                      };
+                  %>
+                  <% ['B', 'I', 'N', 'G', 'O'].forEach(letra => { %>
+                      <div class="flex justify-center transform hover:scale-110 transition-transform">
+                          <div class="w-14 h-14 rounded-full <%= estilosLetras[letra].color %> text-white flex items-center justify-center font-bold text-2xl shadow-lg <%= estilosLetras[letra].shadow %> shadow-md border-2 border-white">
+                              <%= letra %>
+                          </div>
+                      </div>
+                  <% }); %>
+              
+              <% for(let i = 0; i < 5; i++) { %>
+                  <% for(let j = 0; j < 5; j++) { %>
+                      <% const numero = carton.numeros[i][j]; %>
+                      <% const marcado = carton.marcados && carton.marcados.includes(`${i}-${j}`); %>
+                      <% 
+                          let colorNormal = 'bg-gray-50';
+                          let colorHover = 'hover:bg-gray-200';
+                          
+                          if (numero) {
+                              if (j === 0) { colorNormal = 'bg-blue-50'; colorHover = 'hover:bg-blue-200'; }
+                              else if (j === 1) { colorNormal = 'bg-yellow-50'; colorHover = 'hover:bg-yellow-200'; }
+                              else if (j === 2) { colorNormal = 'bg-red-50'; colorHover = 'hover:bg-red-200'; }
+                              else if (j === 3) { colorNormal = 'bg-green-50'; colorHover = 'hover:bg-green-200'; }
+                              else if (j === 4) { colorNormal = 'bg-purple-50'; colorHover = 'hover:bg-purple-200'; }
+                          }
+                      %>
+                        <% if (i === 2 && j === 2) { %>
+                            <div class="
+                                aspect-square flex items-center justify-center rounded-lg
+                                bg-white shadow-lg overflow-hidden
+                            ">
+                                <img src="/logo.png" alt="Logo" class="w-full h-full object-contain p-1">
+                            </div>
+                        <% } else { %>
+                          <div class="
+                              aspect-square flex items-center justify-center text-xl font-bold rounded-lg cursor-pointer
+                              <%= numero ? colorNormal : 'bg-gray-200' %>
+                              <%= numero ? colorHover : '' %>
+                              <%= marcado ? 'bg-green-500 text-white hover:bg-green-600' : '' %>
+                              <%= !numero ? 'cursor-default' : '' %>
+                              numero-carton
+                              transition-all duration-200
+                              shadow hover:shadow-lg
+                              relative overflow-hidden
+                          "
+                          data-fila="<%= i %>"
+                          data-columna="<%= j %>"
+                          data-numero="<%= numero || '' %>"
+                          <%- numero ? `onclick="marcarNumero(this, ${i}, ${j}, ${numero})"` : '' %>>
+                              <% if (numero && !marcado) { %>
+                                  <div class="absolute top-0 left-0 w-full h-1 <%= 
+                                      j === 0 ? 'bg-blue-500' : 
+                                      j === 1 ? 'bg-yellow-500' : 
+                                      j === 2 ? 'bg-red-500' : 
+                                      j === 3 ? 'bg-green-500' : 
+                                      'bg-purple-500' 
+                                  %>"></div>
+                              <% } %>
+                              
+                              <%= numero || '★' %>
+                          </div>
+                      <% } %>
+                  <% } %>
+              <% } %>
+              </div>
+                <div class="flex justify-center gap-4 mt-4 text-xs text-gray-600">
+                    <div class="flex items-center gap-1">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span>B (1-15)</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <span>I (16-30)</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span>N (31-45)</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>G (46-60)</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                        <span>O (61-75)</span>
+                    </div>
+                </div>
+                    <div class="text-sm text-gray-600 text-center border-t pt-4">
+                        <p class="mb-2">💡 Haz clic en los números para marcarlos (solo si han salido)</p>
+                        <p>🎯 Modo automático: los números se marcan solos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h2 class="text-lg font-bold mb-4">📊 Estado del juego</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span>Estado:</span>
+                            <span id="estadoJuego" class="px-3 py-1 rounded-full text-sm font-semibold
+                                <%= juego.estado === 'jugando' ? 'bg-green-100 text-green-800' : 
+                                   juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800' : 
+                                   'bg-gray-100 text-gray-800' %>">
+                                <%= juego.estado || 'esperando' %>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>Modalidad:</span>
+                            <span class="font-semibold"><%= juego.modalidad || 'No definida' %></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>Números marcados:</span>
+                            <span class="font-semibold" id="contadorMarcados"><%= carton.marcados?.length || 0 %>/25</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>Modo actual:</span>
+                            <span class="font-semibold" id="modoActualDisplay">Manual</span>
+                        </div>
+                    </div>
+                    <button id="btnBingo" 
+                            class="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition transform hover:scale-105 shadow-lg hidden">
+                        🎰 ¡BINGO!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+    const socket = io();
+    const numeroCarton = <%= carton.numeroCarton %>;
+    let modoAutomatico = <%= carton.modoMarcado === 'automatico' ? 'true' : 'false' %>;
+    let juegoActivo = <%= juego && juego.estado === 'jugando' ? 'true' : 'false' %>;
+    
+    let todasLasBolas = [];
+    <% if (juego && juego.bolasCantadas) { %>
+        todasLasBolas = <%= JSON.stringify(juego.bolasCantadas) %>;
+    <% } %>
+    
+    let bolasFormateadas = [];
+    
+    let numerosMarcados = new Set();
+    
+    function getColorPorLetra(letra) {
+        const colores = {
+            'B': 'bg-blue-500',
+            'I': 'bg-yellow-500',
+            'N': 'bg-red-500',
+            'G': 'bg-green-500',
+            'O': 'bg-purple-500'
+        };
+        return colores[letra] || 'bg-gray-500';
+    }
+    
+    function formatearBola(numero) {
+        if (numero >= 1 && numero <= 15) return { formato: `B${numero}`, letra: 'B' };
+        if (numero >= 16 && numero <= 30) return { formato: `I${numero}`, letra: 'I' };
+        if (numero >= 31 && numero <= 45) return { formato: `N${numero}`, letra: 'N' };
+        if (numero >= 46 && numero <= 60) return { formato: `G${numero}`, letra: 'G' };
+        if (numero >= 61 && numero <= 75) return { formato: `O${numero}`, letra: 'O' };
+        return { formato: numero.toString(), letra: '' };
+    }
+    
+    function actualizarBolasFormateadas() {
+        bolasFormateadas = todasLasBolas.map(numero => formatearBola(numero));
+    }
+    
+    function cargarMarcadosLocal() {
+        const guardado = localStorage.getItem(`carton_${numeroCarton}_marcados`);
+        if (guardado) {
+            try {
+                const marcadosArray = JSON.parse(guardado);
+                numerosMarcados = new Set(marcadosArray);
+                
+                marcadosArray.forEach(posicion => {
+                    const [fila, columna] = posicion.split('-');
+                    const celda = document.querySelector(`[data-fila="${fila}"][data-columna="${columna}"]`);
+                    if (celda) {
+                        celda.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
+                    }
+                });
+                
+                actualizarContador();
+            } catch (e) {
+                console.error('Error cargando marcados:', e);
+            }
+        }
+    }
+    
+    function guardarMarcadosLocal() {
+        const marcadosArray = Array.from(numerosMarcados);
+        localStorage.setItem(`carton_${numeroCarton}_marcados`, JSON.stringify(marcadosArray));
+    }
+    
+    function abrirHistorialCompleto() {
+        const modal = document.getElementById('vistaTodas');
+        const contenedor = document.getElementById('historialCompleto');
+        
+        if (!modal || !contenedor) return;
+        
+        contenedor.innerHTML = '';
+        
+        bolasFormateadas.slice().reverse().forEach(bola => {
+            const bolaElement = document.createElement('div');
+            bolaElement.className = `aspect-square ${getColorPorLetra(bola.letra)} text-white rounded-lg flex items-center justify-center font-bold text-sm sm:text-base shadow-md hover:scale-110 transition-transform`;
+            bolaElement.textContent = bola.formato;
+            contenedor.appendChild(bolaElement);
+        });
+        
+        modal.classList.remove('hidden');
+    }
+    
+    function cerrarHistorialCompleto() {
+        const modal = document.getElementById('vistaTodas');
+        if (modal) modal.classList.add('hidden');
+    }
+    
+    window.marcarNumero = function(elemento, fila, columna, numero) {
+        if (!juegoActivo) {
+            alert('⏸️ El juego no está activo');
+            return;
+        }
+        
+        if (modoAutomatico) {
+            alert('🤖 Estás en modo automático, los números se marcan solos');
+            return;
+        }
+        
+        if (!numero) {
+            return;
+        }
+        
+        if (!todasLasBolas.includes(numero)) {
+            alert(`❌ La bola ${numero} aún no ha salido`);
+            return;
+        }
+        
+        const posicion = `${fila}-${columna}`;
+        
+        if (numerosMarcados.has(posicion)) {
+            alert('✅ Ya marcaste este número');
+            return;
+        }
+        
+        elemento.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
+        
+        numerosMarcados.add(posicion);
+        
+        guardarMarcadosLocal();
+        
+        socket.emit('marcar-manual', {
+            numeroCarton: numeroCarton,
+            posicion: posicion
+        });
+        
+        actualizarContador();
+    }
+    
+    function marcarNumeroAutomatico(numero) {
+        const celdas = document.querySelectorAll(`[data-numero="${numero}"]`);
+        let huboCambios = false;
+        
+        celdas.forEach(celda => {
+            const fila = celda.dataset.fila;
+            const columna = celda.dataset.columna;
+            const posicion = `${fila}-${columna}`;
+            
+            if (!numerosMarcados.has(posicion)) {
+                celda.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
+                
+                numerosMarcados.add(posicion);
+                huboCambios = true;
+            } else {
+                console.log(`⏭️`);
+            }
+        });
+        
+        if (huboCambios) {
+            guardarMarcadosLocal();
+            actualizarContador();
+        }
+    }
+    
+    function marcarBolasAnteriores() {
+        todasLasBolas.forEach(numero => {
+            const celdas = document.querySelectorAll(`[data-numero="${numero}"]`);
+            
+            celdas.forEach(celda => {
+                const fila = celda.dataset.fila;
+                const columna = celda.dataset.columna;
+                const posicion = `${fila}-${columna}`;
+                
+                if (!numerosMarcados.has(posicion)) {
+                    celda.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
+                    
+                    numerosMarcados.add(posicion);
+                }
+            });
+        });
+        
+        guardarMarcadosLocal();
+        actualizarContador();
+    }
+    
+    function actualizarContador() {
+        const contador = document.getElementById('contadorMarcados');
+        const btnBingo = document.getElementById('btnBingo');
+        
+        if (contador) {
+            contador.textContent = numerosMarcados.size + '/24';
+        }
+        
+        if (numerosMarcados.size === 24 && juegoActivo) {
+            if (btnBingo) btnBingo.classList.remove('hidden');
+        } else {
+            if (btnBingo) btnBingo.classList.add('hidden');
+        }
+    }
+    
+    function mostrarNotificacion(mensaje, color) {
+        const notificacion = document.createElement('div');
+        notificacion.className = `fixed top-4 right-4 bg-${color}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce`;
+        notificacion.textContent = mensaje;
+        document.body.appendChild(notificacion);
+        
+        setTimeout(() => {
+            notificacion.remove();
+        }, 3000);
+    }
+    
+    function confeti() {
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confeti = document.createElement('div');
+                confeti.className = 'fixed text-2xl';
+                confeti.style.left = Math.random() * 100 + '%';
+                confeti.style.top = '-10%';
+                confeti.style.animation = 'aparecer 1s ease forwards';
+                confeti.style.zIndex = '9999';
+                confeti.textContent = ['🎉', '🎊', '✨', '🎰'][Math.floor(Math.random() * 4)];
+                document.body.appendChild(confeti);
+                
+                setTimeout(() => confeti.remove(), 1000);
+            }, i * 20);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMarcadosLocal();
+        actualizarBolasFormateadas();
+        
+        const modoTexto = document.getElementById('modoTexto');
+        const modoDisplay = document.getElementById('modoActualDisplay');
+        if (modoTexto) modoTexto.textContent = modoAutomatico ? 'Modo Automático' : 'Modo Manual';
+        if (modoDisplay) modoDisplay.textContent = modoAutomatico ? 'Automático' : 'Manual';
+        
+        if (modoAutomatico && todasLasBolas.length > 0) {
+            marcarBolasAnteriores();
+        }
+        
+        const btnVerUltimas = document.getElementById('btnVerUltimas');
+        const btnVerTodas = document.getElementById('btnVerTodas');
+        
+        if (btnVerUltimas && btnVerTodas) {
+            btnVerUltimas.addEventListener('click', function() {
+                this.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnVerTodas.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnVerTodas.classList.add('text-gray-500');
+                document.getElementById('vistaUltimas').classList.remove('hidden');
+            });
+            
+            btnVerTodas.addEventListener('click', function() {
+                this.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnVerUltimas.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnVerUltimas.classList.add('text-gray-500');
+                document.getElementById('vistaUltimas').classList.add('hidden');
+                abrirHistorialCompleto();
+            });
+        }
+        
+        const btnHistorial = document.getElementById('btnVerHistorialCompleto');
+        if (btnHistorial && todasLasBolas.length > 0) {
+            btnHistorial.classList.remove('hidden');
+        }
+    });
+    
+    socket.emit('registrar-carton', { numeroCarton });
+    
+    socket.on('juego-iniciado', (data) => {
+        const estadoJuego = document.getElementById('estadoJuego');
+        const modalidadDisplay = document.getElementById('modalidadDisplay');
+        
+        if (estadoJuego) {
+            estadoJuego.textContent = 'jugando';
+            estadoJuego.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+        }
+        if (modalidadDisplay) modalidadDisplay.textContent = data.modalidad;
+        juegoActivo = true;
+        
+        mostrarNotificacion('🎮 ¡Juego iniciado!', 'green');
+    });
+    
+    socket.on('juego-pausado', () => {
+        const estadoJuego = document.getElementById('estadoJuego');
+        if (estadoJuego) {
+            estadoJuego.textContent = 'pausado';
+            estadoJuego.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800';
+        }
+        juegoActivo = false;
+    });
+    
+    socket.on('juego-reanudado', () => {
+        const estadoJuego = document.getElementById('estadoJuego');
+        if (estadoJuego) {
+            estadoJuego.textContent = 'jugando';
+            estadoJuego.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+        }
+        juegoActivo = true;
+        mostrarNotificacion('▶️ Juego reanudado', 'green');
+    });
+    
+    socket.on('nueva-bola', (data) => {
+        const { numero, formato, letra, bolasCantadas: nuevasBolas } = data;
+        
+        todasLasBolas = nuevasBolas;
+        actualizarBolasFormateadas();
+        
+        const ultimaBola = document.getElementById('ultimaBola');
+        const totalBolas = document.getElementById('totalBolas');
+        const btnHistorial = document.getElementById('btnVerHistorialCompleto');
+        
+        if (ultimaBola) ultimaBola.textContent = formato;
+        if (totalBolas) totalBolas.textContent = nuevasBolas.length;
+        if (btnHistorial && nuevasBolas.length > 0) btnHistorial.classList.remove('hidden');
+        
+        const historial = document.getElementById('bolasHistorial');
+        if (historial) {
+            if (historial.children.length === 1 && historial.children[0].tagName === 'P') {
+                historial.innerHTML = '';
+            }
+            
+            const bolaElement = document.createElement('span');
+            bolaElement.className = `w-14 h-14 rounded-full ${getColorPorLetra(letra)} text-white flex items-center justify-center font-bold text-sm shadow-lg transform hover:scale-110 transition-transform bola-nueva`;
+            bolaElement.textContent = formato;
+            historial.prepend(bolaElement);
+            
+            while (historial.children.length > 20) {
+                historial.removeChild(historial.lastChild);
+            }
+        }
+        
+        if (modoAutomatico && juegoActivo) {
+            marcarNumeroAutomatico(numero);
+        }
+    });
+    
+    socket.on('juego-terminado', (data) => {
+        mostrarNotificacion(data.mensaje, 'red');
+        
+        const estadoJuego = document.getElementById('estadoJuego');
+        if (estadoJuego) {
+            estadoJuego.textContent = 'finalizado';
+            estadoJuego.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800';
+        }
+        juegoActivo = false;
+        
+        if (data.cartonId === numeroCarton) {
+            alert('🎉 ¡FELICIDADES! Has ganado el bingo');
+            confeti();
+        }
+        
+        localStorage.removeItem(`carton_${numeroCarton}_marcados`);
+    });
+    
+    socket.on('marcado-exitoso', (data) => {
+        console.log('✅');
+    });
+    
+    socket.on('modo-cambiado', (data) => {
+        const modoDisplay = document.getElementById('modoActualDisplay');
+        const modoTexto = document.getElementById('modoTexto');
+        
+        if (modoDisplay) {
+            modoDisplay.textContent = data.modo === 'automatico' ? 'Automático' : 'Manual';
+        }
+        if (modoTexto) {
+            modoTexto.textContent = data.modo === 'automatico' ? 'Modo Automático' : 'Modo Manual';
+        }
+        
+        const modoAnterior = modoAutomatico;
+        modoAutomatico = data.modo === 'automatico';
+        
+        if (modoAutomatico && !modoAnterior && todasLasBolas.length > 0) {
+            marcarBolasAnteriores();
+        }
+    });
+    
+    socket.on('sesion-reemplazada', () => {
+        alert('⚠️ Esta sesión ha sido reemplazada por otra conexión');
+        window.location.reload();
+    });
+    
+    window.addEventListener('load', () => {
+        if (juegoActivo) {
+            fetch(`/api/juego/estado/${numeroCarton}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.juego.estado === 'jugando') {
+                        todasLasBolas = data.juego.bolasCantadas;
+                        actualizarBolasFormateadas();
+                        if (modoAutomatico) {
+                            marcarBolasAnteriores();
+                        }
+                    }
+                });
+        }
+    });
+    
+    socket.on('reiniciar-cartones', () => {
+        numerosMarcados.clear();
+        guardarMarcadosLocal();
+        
+        document.querySelectorAll('[data-numero]').forEach(celda => {
+            celda.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600');
+            
+            const columna = parseInt(celda.dataset.columna);
+            const fila = parseInt(celda.dataset.fila);
+            const numero = parseInt(celda.dataset.numero);
+            
+            if (numero && !(fila === 2 && columna === 2)) {
+                if (columna === 0) {
+                    celda.classList.add('bg-blue-50', 'hover:bg-blue-100');
+                } else if (columna === 1) {
+                    celda.classList.add('bg-yellow-50', 'hover:bg-yellow-100');
+                } else if (columna === 2) {
+                    celda.classList.add('bg-red-50', 'hover:bg-red-100');
+                } else if (columna === 3) {
+                    celda.classList.add('bg-green-50', 'hover:bg-green-100');
+                } else if (columna === 4) {
+                    celda.classList.add('bg-purple-50', 'hover:bg-purple-100');
+                }
+            }
+        });
+        
+        actualizarContador();
+        mostrarNotificacion('🔄 Nuevo juego - Cartón reiniciado', 'blue');
+        localStorage.removeItem(`carton_${numeroCarton}_marcados`);
+    });
+    
+    const toggleModo = document.getElementById('toggleModo');
+    if (toggleModo) {
+        toggleModo.addEventListener('click', () => {
+            const nuevoModo = !modoAutomatico;
+            
+            socket.emit('cambiar-modo', {
+                numeroCarton: numeroCarton,
+                modo: nuevoModo ? 'automatico' : 'manual'
+            });
+            
+            mostrarNotificacion(`Cambiando modo...`, 'purple');
+        });
+    }
+    
+    const btnBingo = document.getElementById('btnBingo');
+    if (btnBingo) {
+        btnBingo.addEventListener('click', () => {
+            if (numerosMarcados.size === 24) {
+                socket.emit('cantar-bingo', { numeroCarton: numeroCarton });
+            } else {
+                alert(`❌ Te faltan ${24 - numerosMarcados.size} números por marcar`);
+            }
+        });
+    }
+    
+    const btnCerrarModal = document.querySelector('#vistaTodas button');
+    if (btnCerrarModal) {
+        btnCerrarModal.addEventListener('click', cerrarHistorialCompleto);
+    }
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            cerrarHistorialCompleto();
+        }
+    });
+    
+    actualizarContador();
+    
+    setInterval(() => {
+        if (numerosMarcados.size > 0) {
+            fetch(`/jugador/api/${numeroCarton}/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    marcados: Array.from(numerosMarcados),
+                    modo: modoAutomatico ? 'automatico' : 'manual'
+                })
+            }).catch(err => console.log('Error sync:', err));
+        }
+    }, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Acceder - <%= name_page %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+        }
+
+        .gold-text {
+            background: linear-gradient(to bottom, #fde68a, #fbbf24, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .glow-animation {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .bg-casino-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        @keyframes fallDown {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .bola-bingo {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #111827;
+            font-size: 0.8rem;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.5);
+            animation: fallDown 20s infinite linear;
+            z-index: 0;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+
+        .access-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .access-input:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .access-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 16px 60px 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-footer {
+            position: relative;
+            width: 100%;
+            text-align: center;
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(8px);
+            font-size: 0.75rem;
+            color: #64748b;
+            z-index: 10;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="bg-casino-fixed">
+        <div class="bola-bingo bg-white w-12 h-12 text-xs" style="left: 5%; animation-duration: 18s; animation-delay: 0s;">B5</div>
+        <div class="bola-bingo bg-green-400 w-16 h-16 text-sm" style="left: 15%; animation-duration: 24s; animation-delay: 2s;">I20</div>
+        <div class="bola-bingo bg-yellow-400 w-10 h-10 text-xs" style="left: 25%; animation-duration: 20s; animation-delay: 1s;">G47</div>
+        <div class="bola-bingo bg-red-400 w-14 h-14 text-sm" style="left: 35%; animation-duration: 28s; animation-delay: 3s;">O72</div>
+        <div class="bola-bingo bg-blue-400 w-14 h-14 text-xs" style="left: 45%; animation-duration: 22s; animation-delay: 0.5s;">N33</div>
+        <div class="bola-bingo bg-indigo-400 w-12 h-12 text-xs" style="left: 85%; animation-duration: 23s; animation-delay: 3.5s;">O69</div>
+        <div class="bola-bingo bg-teal-400 w-14 h-14 text-sm" style="left: 95%; animation-duration: 27s; animation-delay: 1.8s;">N41</div>
+        <div class="bola-bingo bg-amber-400 w-10 h-10 text-xs" style="left: 8%; animation-duration: 15s; animation-delay: 3s;">B8</div>
+    </div>
+
+    <nav class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center font-bold text-xl border-2 border-yellow-400 shadow-lg shadow-red-500/50 flex-shrink-0">
+                      <img src="/logo.png" class="rounded-full object-cover">
+                    </div>
+                    <span class="font-extrabold text-xl sm:text-2xl tracking-tighter uppercase gold-text leading-tight"><%= name_page %></span>
+                </div>
+                <a href="/" class="text-white/80 hover:text-white transition flex items-center space-x-2 bg-white/5 px-4 py-2 rounded-full">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden sm:inline">Volver al inicio</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="container mx-auto px-4 relative">
+            <div class="max-w-md mx-auto">
+                <div class="text-center mb-6 float-animation">
+                    <div class="w-24 h-24 md:w-28 md:h-28 bg-gradient-to-br from-red-600 to-red-700 rounded-full mx-auto flex items-center justify-center shadow-2xl border-4 border-yellow-400 glow-animation">
+                      <img src="/logo.png" class="rounded-full object-cover">
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-white mt-4">
+                        <span class="gold-text"><%= name_page %></span>
+                    </h1>
+                    <p class="text-slate-300 text-sm md:text-base mt-1">Acceso a la sala de juego</p>
+                </div>
+                
+                <div class="bg-white/5 backdrop-blur-md rounded-3xl shadow-2xl p-5 md:p-7 border border-white/10">
+                    <h2 class="text-xl md:text-2xl font-bold text-center mb-5 gold-text">Acceder al juego</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-slate-300 text-sm font-bold mb-2">
+                                <i class="fa-solid fa-key mr-2 text-yellow-400"></i>
+                                Código de acceso
+                            </label>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="codigoAcceso"
+                                       placeholder="Ej: JUAN123"
+                                       class="w-full px-5 py-3.5 access-input rounded-xl text-center text-lg uppercase tracking-wider font-bold"
+                                       maxlength="10"
+                                       autocomplete="off">
+                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-circle-check text-green-500 opacity-0 text-lg" id="inputCheck"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2 flex items-center">
+                                <i class="fa-solid fa-info-circle mr-2 text-blue-400 text-xs"></i>
+                                Ingresa el código que te dio el organizador
+                            </p>
+                        </div>
+                        
+                        <button onclick="acceder()" 
+                                class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3.5 px-6 rounded-xl text-lg transition-all transform hover:scale-[1.02] shadow-[0_0_20px_rgba(220,38,38,0.5)] flex items-center justify-center space-x-3 group">
+                            <span>🎮 ENTRAR</span>
+                            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                        </button>
+                        
+                        <div id="errorMensaje" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl backdrop-blur-sm">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span id="errorTexto" class="text-sm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5 pt-4 border-t border-white/10">
+                        <div class="bg-white/5 rounded-xl p-3">
+                            <p class="text-center text-slate-300 text-sm flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-ticket text-yellow-400"></i>
+                                <span>¿No tienes código? Pídelo al organizador</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!--
+                <div class="grid grid-cols-3 gap-2 mt-4">
+                    <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10 hover:border-red-500/30 transition">
+                        <i class="fa-solid fa-bolt text-yellow-400 text-lg"></i>
+                        <p class="text-[10px] md:text-xs text-slate-300 mt-1 font-medium">Retiros rápidos</p>
+                    </div>
+                    <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10 hover:border-red-500/30 transition">
+                        <i class="fa-solid fa-shield text-green-400 text-lg"></i>
+                        <p class="text-[10px] md:text-xs text-slate-300 mt-1 font-medium">100% Seguro</p>
+                    </div>
+                    <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10 hover:border-red-500/30 transition">
+                        <i class="fa-solid fa-users text-blue-400 text-lg"></i>
+                        <p class="text-[10px] md:text-xs text-slate-300 mt-1 font-medium">Comunidad</p>
+                    </div>
+                </div>
+                -->
+
+                <div class="flex items-center justify-center mt-3 space-x-3 text-xs text-slate-400">
+                    <span class="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-full">
+                        <i class="fa-solid fa-crown text-yellow-500 text-[10px]"></i>
+                        <span>Máx. 4 cartones</span>
+                    </span>
+                    <span class="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-full">
+                        <i class="fa-solid fa-clock text-green-500 text-[10px]"></i>
+                        <span>24/7</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="max-w-7xl mx-auto">
+          <%- include("../partials/footer") %>
+        </div>
+    </footer>
+
+    <script>
+        const socket = io();
+        const inputCodigo = document.getElementById('codigoAcceso');
+        const inputCheck = document.getElementById('inputCheck');
+        
+        inputCodigo.addEventListener('input', function() {
+            if (this.value.length >= 3) {
+                inputCheck.style.opacity = '1';
+            } else {
+                inputCheck.style.opacity = '0';
+            }
+        });
+
+        function acceder() {
+            const codigo = document.getElementById('codigoAcceso').value.trim().toUpperCase();
+            const btn = event.target.closest('button');
+            
+            if (!codigo) {
+                mostrarError('Ingresa un código de acceso');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = `
+                <span>⏳ Accediendo...</span>
+                <i class="fa-solid fa-spinner fa-spin ml-2"></i>
+            `;
+            socket.emit('acceder-con-codigo', { codigo });
+        }
+        
+        socket.on('acceso-exitoso', (data) => {
+            if (!data.cartones || data.cartones.length === 0) {
+                mostrarError('No tienes cartones asignados');
+                
+                const btn = document.querySelector('button');
+                btn.disabled = false;
+                btn.innerHTML = '🎮 ENTRAR <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>';
+                return;
+            }
+            
+            sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+            sessionStorage.setItem('cartones', JSON.stringify(data.cartones));
+            
+            mostrarExito('¡Acceso correcto! Redirigiendo...');
+            
+            setTimeout(() => {
+                window.location.href = '/jugador/multi';
+            }, 1000);
+        });
+        
+        socket.on('error-acceso', (data) => {
+            console.error('❌ Error de acceso:', data);
+            mostrarError(data.mensaje);
+            
+            const btn = document.querySelector('button');
+            btn.disabled = false;
+            btn.innerHTML = '🎮 ENTRAR <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>';
+        });
+        
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('errorMensaje');
+            const errorTexto = document.getElementById('errorTexto');
+            errorTexto.textContent = mensaje;
+            errorDiv.classList.remove('hidden');
+            
+            inputCodigo.classList.add('border-red-500', 'animate-pulse');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+                inputCodigo.classList.remove('border-red-500', 'animate-pulse');
+            }, 3000);
+        }
+
+        function mostrarExito(mensaje) {
+            const errorDiv = document.getElementById('errorMensaje');
+            const errorTexto = document.getElementById('errorTexto');
+            errorTexto.textContent = mensaje;
+            errorDiv.classList.remove('hidden');
+            errorDiv.classList.remove('bg-red-500/10', 'border-red-500/30', 'text-red-400');
+            errorDiv.classList.add('bg-green-500/10', 'border-green-500/30', 'text-green-400');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+                errorDiv.classList.remove('bg-green-500/10', 'border-green-500/30', 'text-green-400');
+                errorDiv.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
+            }, 2000);
+        }
+        
+        document.getElementById('codigoAcceso').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                acceder();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.max-w-md').style.opacity = '0';
+            setTimeout(() => {
+                document.querySelector('.max-w-md').style.transition = 'opacity 0.5s ease';
+                document.querySelector('.max-w-md').style.opacity = '1';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

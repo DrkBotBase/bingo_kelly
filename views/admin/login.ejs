@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Login - <%= name_page %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        @keyframes fallDown {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .bg-bolas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bola-bingo {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 0.9rem;
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.4);
+            animation: fallDown 20s infinite linear;
+            z-index: 0;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .logo-bingo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            border: 3px solid #fbbf24;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .input-admin {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .input-admin::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-admin:focus {
+            outline: none;
+            border-color: #ef4444;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 0.75rem 3rem 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .password-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #ef4444;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .toggle-password:hover {
+            color: #ef4444;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .toggle-password:focus {
+            outline: none;
+        }
+
+        label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .btn-admin {
+            width: 100%;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: white;
+            font-weight: 600;
+            padding: 0.875rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-admin:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-admin:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fecaca;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(5px);
+        }
+
+        a {
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #ef4444;
+        }
+
+        h1 {
+            color: white;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-bolas">
+        <div class="bola-bingo bg-blue-500 w-16 h-16" style="left: 5%; animation-duration: 22s; animation-delay: 0s;">B12</div>
+        <div class="bola-bingo bg-yellow-500 w-14 h-14" style="left: 15%; animation-duration: 25s; animation-delay: 2s;">I23</div>
+        <div class="bola-bingo bg-pink-500 w-12 h-12" style="left: 55%; animation-duration: 23s; animation-delay: 4s;">B7</div>
+        <div class="bola-bingo bg-teal-500 w-14 h-14" style="left: 75%; animation-duration: 29s; animation-delay: 2.5s;">N44</div>
+        <div class="bola-bingo bg-orange-500 w-11 h-11" style="left: 85%; animation-duration: 21s; animation-delay: 3.5s;">G57</div>
+        <div class="bola-bingo bg-cyan-500 w-16 h-16" style="left: 95%; animation-duration: 30s; animation-delay: 5s;">O68</div>
+        <div class="bola-bingo bg-lime-500 w-12 h-12" style="left: 10%; animation-duration: 26s; animation-delay: 6s;">B3</div>
+        <div class="bola-bingo bg-fuchsia-500 w-14 h-14" style="left: 40%; animation-duration: 25s; animation-delay: 8s;">G49</div>
+        <div class="bola-bingo bg-rose-500 w-16 h-16" style="left: 50%; animation-duration: 27s; animation-delay: 5.5s;">O73</div>
+        <div class="bola-bingo bg-sky-500 w-11 h-11" style="left: 60%; animation-duration: 24s; animation-delay: 9s;">B15</div>
+        <div class="bola-bingo bg-violet-500 w-14 h-14" style="left: 70%; animation-duration: 29s; animation-delay: 6.5s;">I30</div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-bingo">
+              <img src="/logo.png" class="rounded-full object-cover">
+            </div>
+            
+            <h1 class="text-3xl font-bold text-center mb-2">
+                Admin Panel
+            </h1>
+            <p class="text-center text-sm mb-6">
+                <i class="fa-solid fa-lock mr-1"></i>
+                Acceso restringido
+            </p>
+            
+            <% if (error) { %>
+                <div class="error-message">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <%= error %>
+                </div>
+            <% } %>
+            
+            <form method="POST" action="/admin/login" onsubmit="return handleSubmit(this)">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">
+                        <i class="fa-solid fa-user mr-2 text-red-400"></i>
+                        Usuario
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           required
+                           placeholder="Ingresa tu usuario"
+                           class="input-admin"
+                           autocomplete="off">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-2">
+                        <i class="fa-solid fa-key mr-2 text-red-400"></i>
+                        Contraseña
+                    </label>
+                    <div class="password-container">
+                        <input type="password" 
+                               name="password" 
+                               id="passwordField"
+                               required
+                               placeholder="••••••••"
+                               class="password-input">
+                        <button type="button" 
+                                class="toggle-password" 
+                                onclick="togglePassword()"
+                                id="toggleBtn">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" id="btnSubmit" class="btn-admin">
+                    <span class="btn-content">
+                        <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i>
+                        Ingresar al Panel
+                    </span>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <a href="/" class="text-sm flex items-center justify-center gap-1 text-white">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Volver al inicio
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('passwordField');
+            const toggleBtn = document.getElementById('toggleBtn');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+            } else {
+                passwordField.type = 'password';
+                toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+            }
+        }
+
+        function handleSubmit(form) {
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = `
+                <span class="btn-loader"></span>
+                <span>Ingresando...</span>
+            `;
+            return true;
+        }
+
+        function ajustarBolas() {
+            if (window.innerWidth < 768) {
+                const bolas = document.querySelectorAll('.bola-bingo');
+                bolas.forEach(bola => {
+                    const tamañoActual = parseInt(bola.style.width);
+                    if (tamañoActual > 40) {
+                        bola.style.width = (tamañoActual * 0.7) + 'px';
+                        bola.style.height = (tamañoActual * 0.7) + 'px';
+                        bola.style.fontSize = '0.7rem';
+                    }
+                });
+            }
+        }
+        window.addEventListener('load', ajustarBolas);
+        window.addEventListener('resize', ajustarBolas);
+        document.getElementById('toggleBtn').addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

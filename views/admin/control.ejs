@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control de Juego - <%= name_page %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .bola-cantada {
+            animation: slideIn 0.3s ease;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            border: 1px solid #f0f0f0;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-control {
+            font-weight: 700;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            transform: scale(1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-control:hover {
+            transform: scale(1.02);
+        }
+        .btn-control:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+        }
+        .btn-success:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #eab308, #ca8a04);
+            color: white;
+        }
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ca8a04, #a16207);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #b91c1c, #991b1b);
+        }
+        .btn-purple {
+            background: linear-gradient(135deg, #9333ea, #7e22ce);
+            color: white;
+        }
+        .btn-purple:hover {
+            background: linear-gradient(135deg, #7e22ce, #6b21a8);
+        }
+        .btn-outline {
+            background: white;
+            border: 2px solid #e5e7eb;
+            color: #374151;
+        }
+        .btn-outline:hover {
+            border-color: #d1d5db;
+        }
+        .input-moderno {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            font-size: 1.125rem;
+        }
+        .input-moderno:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .select-moderno {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-color: white;
+        }
+        .select-moderno:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .bola-historial {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .bola-historial:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .filtro-letra {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.375rem;
+            padding-bottom: 0.375rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .filtro-letra.active {
+            ring: 2px solid;
+            ring-offset: 2px;
+        }
+        .estado-badge {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.375rem;
+            padding-bottom: 0.375rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-9 h-9 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center font-bold text-white border-2 border-yellow-400 shadow-md">
+                          <img src="/logo.png" class="rounded-full object-cover">
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-gray-800">Control de Juego</h1>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div id="estadoHeader" class="estado-badge 
+                        <%= juego && juego.estado === 'jugando' ? 'bg-green-100 text-green-800 border-2 border-green-200' : 
+                           juego && juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' : 
+                           'bg-gray-100 text-gray-800 border-2 border-gray-200' %>">
+                        <span class="w-2 h-2 rounded-full <%= juego && juego.estado === 'jugando' ? 'bg-green-500 animate-pulse' : 
+                                                             juego && juego.estado === 'pausado' ? 'bg-yellow-500' : 
+                                                             'bg-gray-500' %>"></span>
+                        <span><%= juego ? juego.estado : 'esperando' %></span>
+                    </div>
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition">
+                            <i class="fa-regular fa-circle-user text-xl text-gray-600"></i>
+                            <span class="text-sm font-medium hidden sm:inline">Admin</span>
+                            <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 hidden group-hover:block">
+                            <a href="/admin/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa-solid fa-chart-pie mr-2 text-blue-500"></i>Inicio
+                            </a>
+                            <a href="/admin/usuarios" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa fa-users mr-2 text-blue-500"></i>Usuarios
+                            </a>
+                            <a href="/admin/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl">
+                                <i class="fa-solid fa-sign-out-alt mr-2"></i>Cerrar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-gray-400 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <a href="/admin/dashboard" class="hover:text-blue-600">Inicio</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-gray-600">Control de Juego</span>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-blue-600"></i>
+                            Panel de Control
+                        </h2>
+                        <div class="flex items-center gap-2 text-sm">
+                            <i class="fa-regular fa-clock text-gray-400"></i>
+                            <span class="text-gray-500"><span id="tiempoActual"></span></span>
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2 text-sm">
+                            <i class="fa-solid fa-dice-d6 mr-2 text-purple-500"></i>
+                            Modalidad de juego
+                        </label>
+                        <div class="relative">
+    <select id="modalidad" class="hidden">
+        <option value="linea">Línea simple</option>
+        <option value="dobles-linea">Doble línea</option>
+        <option value="carton-lleno">Cartón lleno</option>
+        <option value="esquinas">Cuatro esquinas</option>
+        <option value="forma-x">Forma de X</option>
+    </select>
+    <div class="select-moderno flex items-center justify-between cursor-pointer" onclick="toggleDropdown()">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-minus text-blue-600"></i>
+            <span id="selectedOption">Línea simple</span>
+        </div>
+        <i class="fa-solid fa-chevron-down text-gray-400"></i>
+    </div>
+    <div id="dropdownOptions" class="absolute mt-1 w-full bg-white rounded-lg shadow-lg hidden z-10">
+        <div class="option-item flex items-center gap-3 p-3 hover:bg-gray-50" onclick="selectOption('linea')">
+            <i class="fa-solid fa-minus text-blue-600 w-5"></i>
+            <span>Línea simple</span>
+        </div>
+        <div class="option-item flex items-center gap-3 p-3 hover:bg-gray-50" onclick="selectOption('dobles-linea')">
+            <i class="fa-solid fa-equals text-blue-600 w-5"></i>
+            <span>Doble línea</span>
+        </div>
+        <div class="option-item flex items-center gap-3 p-3 hover:bg-gray-50" onclick="selectOption('carton-lleno')">
+            <i class="fa-solid fa-square text-blue-600 w-5"></i>
+            <span>Cartón lleno</span>
+        </div>
+        <div class="option-item flex items-center gap-3 p-3 hover:bg-gray-50" onclick="selectOption('esquinas')">
+            <i class="fa-regular fa-square text-blue-600 w-5"></i>
+            <span>Cuatro esquinas</span>
+        </div>
+        <div class="option-item flex items-center gap-3 p-3 hover:bg-gray-50" onclick="selectOption('forma-x')">
+            <i class="fa-solid fa-xmark text-blue-600 w-5"></i>
+            <span>Forma de X</span>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDropdown() {
+    document.getElementById('dropdownOptions').classList.toggle('hidden');
+}
+function selectOption(value) {
+    document.getElementById('modalidad').value = value;
+    const selectedText = event.currentTarget.querySelector('span').textContent;
+    document.getElementById('selectedOption').textContent = selectedText;
+    toggleDropdown();
+}
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.relative')) {
+        document.getElementById('dropdownOptions').classList.add('hidden');
+    }
+});
+</script>
+                        <% if (juego && juego.estado === 'jugando') { %>
+                            <p class="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                No se puede cambiar la modalidad mientras hay juego activo
+                            </p>
+                        <% } %>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <button id="btnIniciar" 
+                                class="btn-control btn-success <%= juego && (juego.estado === 'jugando' || juego.estado === 'pausado') ? 'hidden' : '' %>">
+                            <i class="fa-solid fa-play"></i>
+                            INICIAR
+                        </button>
+                        <button id="btnReanudar" 
+                                class="btn-control btn-primary <%= juego && juego.estado === 'pausado' ? '' : 'hidden' %>">
+                            <i class="fa-solid fa-play-circle"></i>
+                            REANUDAR
+                        </button>
+                        <button id="btnPausar" 
+                                class="btn-control btn-warning <%= juego && juego.estado === 'jugando' ? '' : 'hidden' %>">
+                            <i class="fa-solid fa-pause"></i>
+                            PAUSAR
+                        </button>
+                        <button id="btnFinalizar" 
+                                class="btn-control btn-danger <%= juego && (juego.estado === 'jugando' || juego.estado === 'pausado') ? '' : 'hidden' %>">
+                            <i class="fa-solid fa-stop"></i>
+                            FINALIZAR
+                        </button>
+                    </div>
+                    <div class="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-circle-info text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Estado actual</p>
+                                    <div class="flex items-center gap-2">
+                                        <span id="estadoActual" class="font-semibold"><%= juego ? juego.estado : 'esperando' %></span>
+                                        <% if (juego && juego.modalidad) { %>
+                                            <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
+                                                <%= juego.modalidad %>
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">Última bola</p>
+                                <span id="ultimaBolaDisplay" class="text-3xl font-bold text-blue-600">
+                                    <%= juego && juego.ultimaBola ? juego.ultimaBola : '-' %>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-dice text-purple-600"></i>
+                        Generador de bolas
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            <label class="block text-sm font-medium text-gray-600 mb-2">
+                                <i class="fa-regular fa-keyboard mr-1"></i>
+                                Manual
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="number" 
+                                       id="bolaManual" 
+                                       min="1" 
+                                       max="75"
+                                       class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-center text-lg"
+                                       placeholder="1-75"
+                                       <%= juego && juego.estado !== 'jugando' ? 'disabled' : '' %>>
+                                <button onclick="cantarBolaManual()"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-1 <%= juego && juego.estado !== 'jugando' ? 'opacity-50 cursor-not-allowed' : '' %>"
+                                        <%= juego && juego.estado !== 'jugando' ? 'disabled' : '' %>>
+                                    <i class="fa-solid fa-volume-high"></i>
+                                    <span class="hidden sm:inline">Cantar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            <label class="block text-sm font-medium text-gray-600 mb-2">
+                                <i class="fa-solid fa-shuffle mr-1"></i>
+                                Automático
+                            </label>
+                            <button onclick="bolaAleatoria()"
+                                    class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 <%= juego && juego.estado !== 'jugando' ? 'opacity-50 cursor-not-allowed' : '' %>"
+                                    <%= juego && juego.estado !== 'jugando' ? 'disabled' : '' %>>
+                                <i class="fa-solid fa-dice"></i>
+                                Bola Aleatoria
+                            </button>
+                        </div>
+                    </div>
+                    <% if (juego && juego.estado !== 'jugando') { %>
+                        <p class="text-xs text-red-500 mt-3 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            Inicia el juego para cantar bolas
+                        </p>
+                    <% } %>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-regular fa-clock text-blue-600"></i>
+                            Historial de bolas
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                                <span id="totalBolasDisplay"><%= juego ? juego.bolasCantadas.length : 0 %></span> bolas
+                            </span>
+                            <button onclick="exportarBolas()" class="text-gray-400 hover:text-blue-600 transition" title="Copiar al portapapeles">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="mostrarTodasBolas()" class="filtro-letra bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 active" id="filtro-todas">
+                            <i class="fa-regular fa-circle"></i> Todas
+                        </button>
+                        <button onclick="mostrarPorLetra('B')" class="filtro-letra bg-blue-500 text-white border-blue-600 hover:bg-blue-600" id="filtro-b">B</button>
+                        <button onclick="mostrarPorLetra('I')" class="filtro-letra bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600" id="filtro-i">I</button>
+                        <button onclick="mostrarPorLetra('N')" class="filtro-letra bg-red-500 text-white border-red-600 hover:bg-red-600" id="filtro-n">N</button>
+                        <button onclick="mostrarPorLetra('G')" class="filtro-letra bg-green-500 text-white border-green-600 hover:bg-green-600" id="filtro-g">G</button>
+                        <button onclick="mostrarPorLetra('O')" class="filtro-letra bg-purple-500 text-white border-purple-600 hover:bg-purple-600" id="filtro-o">O</button>
+                    </div>
+                    <div id="historialCompleto" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-64 overflow-y-auto p-2 bg-gray-50 rounded-xl">
+                        <% if (juego && juego.ganador && juego.ganador.cartonId) { %>
+                            <div class="col-span-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse">
+                                <i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #<%= juego.ganador.cartonId %> (<%= juego.ganador.tipo %>)
+                            </div>
+                        <% } %>
+                        <% if (juego && juego.bolasCantadas && juego.bolasCantadas.length > 0) { 
+                            const bolasReversa = juego.bolasCantadas.slice().reverse();
+                            bolasReversa.forEach(bola => { 
+                                const letra = 
+                                    bola >= 1 && bola <= 15 ? 'B' :
+                                    bola >= 16 && bola <= 30 ? 'I' :
+                                    bola >= 31 && bola <= 45 ? 'N' :
+                                    bola >= 46 && bola <= 60 ? 'G' : 'O';
+                                const color = 
+                                    letra === 'B' ? 'bg-blue-500' :
+                                    letra === 'I' ? 'bg-yellow-500' :
+                                    letra === 'N' ? 'bg-red-500' :
+                                    letra === 'G' ? 'bg-green-500' : 'bg-purple-500';
+                        %>
+                            <span class="bola-historial <%= color %> text-white" data-bola="<%= bola %>" data-letra="<%= letra %>">
+                                <%= letra %><%= bola %>
+                            </span>
+                        <% }); %>
+                        <% } else { %>
+                            <p class="text-gray-500 text-center col-span-full py-8 flex flex-col items-center gap-2">
+                                <i class="fa-regular fa-face-frown text-3xl"></i>
+                                No hay bolas cantadas
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-1 space-y-6">
+                <div class="stat-card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-green-600"></i>
+                        Estadísticas en vivo
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="bg-gradient-to-r from-blue-50 to-white rounded-xl p-4 border border-blue-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-blue-600 font-medium">Jugadores conectados</p>
+                                    <p class="text-3xl font-bold text-gray-800" id="statsJugadores">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-users text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-r from-green-50 to-white rounded-xl p-4 border border-green-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-green-600 font-medium">Cartones en juego</p>
+                                    <p class="text-3xl font-bold text-gray-800" id="statsCartones">1000</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-rectangle-ad text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-r from-purple-50 to-white rounded-xl p-4 border border-purple-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-purple-600 font-medium">Progreso promedio</p>
+                                    <p class="text-3xl font-bold text-gray-800" id="statsProgreso">0%</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-chart-line text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card border-2 border-red-200 bg-gradient-to-br from-white to-red-50">
+                    <button onclick="emergenciaStop()"
+                            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-lg shadow-lg <%= juego && juego.estado !== 'jugando' ? 'opacity-50 cursor-not-allowed' : '' %>"
+                            <%= juego && juego.estado !== 'jugando' ? 'disabled' : '' %>>
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        PARADA DE EMERGENCIA
+                    </button>
+                    <p class="text-xs text-gray-500 text-center mt-2">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Detiene el juego inmediatamente
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notificacion" class="fixed top-20 right-4 transform transition-all duration-500 translate-x-full z-50">
+        <div class="bg-white rounded-xl shadow-2xl border-l-4 border-green-500 px-4 py-3 flex items-center gap-3 min-w-[300px]">
+            <div id="notificacion-icono" class="text-green-500 text-xl">
+                <i class="fa-regular fa-circle-check"></i>
+            </div>
+            <div>
+                <p id="notificacion-titulo" class="font-semibold text-gray-800">Éxito</p>
+                <p id="notificacion-mensaje" class="text-sm text-gray-600">Operación completada</p>
+            </div>
+            <button onclick="cerrarNotificacion()" class="ml-auto text-gray-400 hover:text-gray-600">
+                <i class="fa-regular fa-circle-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let juegoActivo = <%= juego && juego.estado === 'jugando' ? 'true' : 'false' %>;
+        let juegoPausado = <%= juego && juego.estado === 'pausado' ? 'true' : 'false' %>;
+        
+        function actualizarTiempo() {
+            const ahora = new Date();
+            const tiempo = document.getElementById('tiempoActual');
+            if (tiempo) {
+                tiempo.textContent = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        }
+        setInterval(actualizarTiempo, 1000);
+        actualizarTiempo();
+
+        function mostrarNotificacion(mensaje, tipo = 'success', duracion = 3000) {
+            const notif = document.getElementById('notificacion');
+            const icono = document.getElementById('notificacion-icono');
+            const titulo = document.getElementById('notificacion-titulo');
+            const mensajeEl = document.getElementById('notificacion-mensaje');
+            
+            const config = {
+                success: { color: 'border-green-500', icono: 'fa fa-check-circle', titulo: 'Éxito' },
+                warning: { color: 'border-yellow-500', icono: 'fa fa-exclamation-triangle', titulo: 'Atención' },
+                error: { color: 'border-red-500', icono: 'fa fa-exclamation-circle', titulo: 'Error' },
+                info: { color: 'border-blue-500', icono: 'fa fa-info-circle', titulo: 'Información' }
+            };
+            
+            const conf = config[tipo] || config.success;
+            
+            notif.querySelector('div').className = `bg-white rounded-xl shadow-2xl border-l-4 ${conf.color} px-4 py-3 flex items-center gap-3 min-w-[300px]`;
+            icono.innerHTML = `<i class="${conf.icono}"></i>`;
+            
+            let iconColor = 'text-green-500';
+            if (tipo === 'warning') iconColor = 'text-yellow-500';
+            if (tipo === 'error') iconColor = 'text-red-500';
+            if (tipo === 'info') iconColor = 'text-blue-500';
+            icono.className = `${iconColor} text-xl`;
+            
+            titulo.textContent = conf.titulo;
+            mensajeEl.textContent = mensaje;
+            
+            notif.classList.remove('translate-x-full');
+            notif.classList.add('translate-x-0');
+            
+            setTimeout(() => {
+                cerrarNotificacion();
+            }, duracion);
+        }
+        
+        function cerrarNotificacion() {
+            const notif = document.getElementById('notificacion');
+            notif.classList.add('translate-x-full');
+            notif.classList.remove('translate-x-0');
+        }
+        
+        socket.on('juego-iniciado', (data) => {
+            juegoActivo = true;
+            juegoPausado = false;
+            actualizarBotones('jugando', data.modalidad);
+            document.getElementById('modalidad').value = data.modalidad;
+            document.getElementById('modalidad').disabled = true;
+            mostrarNotificacion('🎮 Juego iniciado correctamente', 'success');
+            habilitarControlesBola(true);
+        });
+        
+        socket.on('juego-pausado', () => {
+            juegoActivo = false;
+            juegoPausado = true;
+            actualizarBotones('pausado');
+            mostrarNotificacion('⏸️ Juego pausado', 'warning');
+            habilitarControlesBola(false);
+        });
+        
+        socket.on('juego-reanudado', () => {
+            juegoActivo = true;
+            juegoPausado = false;
+            actualizarBotones('jugando');
+            mostrarNotificacion('▶️ Juego reanudado', 'success');
+            habilitarControlesBola(true);
+        });
+        
+        socket.on('juego-terminado', (data) => {
+            juegoActivo = false;
+            juegoPausado = false;
+            actualizarBotones('finalizado');
+            document.getElementById('modalidad').disabled = false;
+
+            if (data.cartonId && data.tipo) {
+                mostrarNotificacion(`🏆 Ganador: Cartón #${data.cartonId} (${data.tipo})`, 'success', 5000);
+
+                const historial = document.getElementById('historialCompleto');
+                if (historial.children.length === 1 && historial.children[0].tagName === 'P') {
+                    historial.innerHTML = '';
+                }
+                const ganadorEl = document.createElement('div');
+                ganadorEl.className = 'col-span-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse';
+                ganadorEl.innerHTML = `<i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #${data.cartonId} (${data.tipo})`;
+                historial.prepend(ganadorEl);
+            } else {
+                mostrarNotificacion(data.mensaje || '🏁 Juego finalizado', 'info');
+            }
+
+            habilitarControlesBola(false);
+        });
+        
+        socket.on('nueva-bola', (data) => {
+            const { numero, formato, letra, bolasCantadas } = data;
+            
+            document.getElementById('totalBolasDisplay').textContent = bolasCantadas.length;
+            document.getElementById('ultimaBolaDisplay').textContent = formato;
+            
+            const historial = document.getElementById('historialCompleto');
+            
+            if (historial.children.length === 1 && historial.children[0].tagName === 'P') {
+                historial.innerHTML = '';
+            }
+            
+            function getColorBola(letra) {
+                const colores = {
+                    'B': 'bg-blue-500',
+                    'I': 'bg-yellow-500',
+                    'N': 'bg-red-500',
+                    'G': 'bg-green-500',
+                    'O': 'bg-purple-500'
+                };
+                return colores[letra] || 'bg-gray-500';
+            }
+            
+            const bolaElement = document.createElement('span');
+            bolaElement.className = `bola-historial ${getColorBola(letra)} text-white bola-cantada`;
+            bolaElement.setAttribute('data-bola', numero);
+            bolaElement.setAttribute('data-letra', letra);
+            bolaElement.textContent = formato;
+            historial.prepend(bolaElement);
+            
+            mostrarNotificacion(`🎲 Nueva bola: ${formato}`, 'info', 2000);
+        });
+        
+        function actualizarBotones(estado, modalidad = null) {
+            const estadoHeader = document.getElementById('estadoHeader');
+            estadoHeader.innerHTML = `
+                <span class="w-2 h-2 rounded-full ${estado === 'jugando' ? 'bg-green-500 animate-pulse' : estado === 'pausado' ? 'bg-yellow-500' : 'bg-gray-500'}"></span>
+                <span>${estado}</span>
+            `;
+            estadoHeader.className = `estado-badge ${
+                estado === 'jugando' ? 'bg-green-100 text-green-800 border-2 border-green-200' :
+                estado === 'pausado' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' :
+                'bg-gray-100 text-gray-800 border-2 border-gray-200'
+            }`;
+            
+            const estadoActual = document.getElementById('estadoActual');
+            estadoActual.textContent = estado;
+            
+            const btnIniciar = document.getElementById('btnIniciar');
+            const btnReanudar = document.getElementById('btnReanudar');
+            const btnPausar = document.getElementById('btnPausar');
+            const btnFinalizar = document.getElementById('btnFinalizar');
+            
+            if (estado === 'jugando') {
+                btnIniciar?.classList.add('hidden');
+                btnReanudar?.classList.add('hidden');
+                btnPausar?.classList.remove('hidden');
+                btnFinalizar?.classList.remove('hidden');
+            } else if (estado === 'pausado') {
+                btnIniciar?.classList.add('hidden');
+                btnReanudar?.classList.remove('hidden');
+                btnPausar?.classList.add('hidden');
+                btnFinalizar?.classList.remove('hidden');
+            } else {
+                btnIniciar?.classList.remove('hidden');
+                btnReanudar?.classList.add('hidden');
+                btnPausar?.classList.add('hidden');
+                btnFinalizar?.classList.add('hidden');
+            }
+        }
+        
+        function habilitarControlesBola(habilitar) {
+            const bolaManual = document.getElementById('bolaManual');
+            const btnCantar = document.querySelector('button[onclick="cantarBolaManual()"]');
+            const btnAleatoria = document.querySelector('button[onclick="bolaAleatoria()"]');
+            const btnEmergencia = document.querySelector('button[onclick="emergenciaStop()"]');
+            
+            if (habilitar) {
+                bolaManual.disabled = false;
+                btnCantar.disabled = false;
+                btnCantar.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnAleatoria.disabled = false;
+                btnAleatoria.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnEmergencia.disabled = false;
+                btnEmergencia.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                bolaManual.disabled = true;
+                btnCantar.disabled = true;
+                btnCantar.classList.add('opacity-50', 'cursor-not-allowed');
+                btnAleatoria.disabled = true;
+                btnAleatoria.classList.add('opacity-50', 'cursor-not-allowed');
+                btnEmergencia.disabled = true;
+                btnEmergencia.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        document.getElementById('btnIniciar')?.addEventListener('click', () => {
+            const modalidad = document.getElementById('modalidad').value;
+            socket.emit('iniciar-juego', { modalidad });
+        });
+        
+        document.getElementById('btnReanudar')?.addEventListener('click', () => {
+            socket.emit('reanudar-juego');
+        });
+        
+        document.getElementById('btnPausar')?.addEventListener('click', () => {
+            socket.emit('pausar-juego');
+        });
+        
+        document.getElementById('btnFinalizar')?.addEventListener('click', () => {
+            if (confirm('¿Seguro que quieres finalizar el juego?')) {
+                socket.emit('finalizar-juego');
+            }
+        });
+        
+        function cantarBolaManual() {
+            if (!juegoActivo) {
+                mostrarNotificacion('El juego no está activo', 'warning');
+                return;
+            }
+            
+            const numero = document.getElementById('bolaManual').value;
+            if (!numero) {
+                mostrarNotificacion('Ingresa un número', 'warning');
+                return;
+            }
+            
+            const num = parseInt(numero);
+            if (num < 1 || num > 75) {
+                mostrarNotificacion('El número debe ser entre 1 y 75', 'warning');
+                return;
+            }
+            
+            socket.emit('cantar-bola', { numero: num });
+            document.getElementById('bolaManual').value = '';
+        }
+        
+        function bolaAleatoria() {
+            if (!juegoActivo) {
+                mostrarNotificacion('El juego no está activo', 'warning');
+                return;
+            }
+            
+            const numero = Math.floor(Math.random() * 75) + 1;
+            socket.emit('cantar-bola', { numero });
+        }
+        
+        function emergenciaStop() {
+            if (confirm('¿Seguro que quieres detener el juego? Esta acción no se puede deshacer.')) {
+                socket.emit('pausar-juego');
+                mostrarNotificacion('⛔ Juego detenido por emergencia', 'error');
+            }
+        }
+        
+        function actualizarEstadisticas() {
+            fetch('/admin/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('statsJugadores').textContent = data.jugadoresConectados || 0;
+                    document.getElementById('statsCartones').textContent = data.cartonesEnJuego || 0;
+                    
+                    if (data.progresoPromedio !== undefined) {
+                        document.getElementById('statsProgreso').textContent = data.progresoPromedio + '%';
+                    }
+                })
+                .catch(err => console.log('Error actualizando stats:', err));
+        }
+        
+        setInterval(actualizarEstadisticas, 3000);
+        actualizarEstadisticas();
+    </script>
+
+    <script>
+        function mostrarTodasBolas() {
+            const bolas = document.querySelectorAll('#historialCompleto span[data-bola]');
+            bolas.forEach(bola => bola.style.display = 'flex');
+            
+            document.querySelectorAll('.filtro-letra').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-2');
+                btn.classList.remove('ring-blue-300', 'ring-yellow-300', 'ring-red-300', 'ring-green-300', 'ring-purple-300');
+            });
+            document.getElementById('filtro-todas').classList.add('ring-2', 'ring-offset-2', 'ring-blue-300');
+        }
+
+        function mostrarPorLetra(letra) {
+            const bolas = document.querySelectorAll('#historialCompleto span[data-bola]');
+            bolas.forEach(bola => {
+                if (bola.dataset.letra === letra) {
+                    bola.style.display = 'flex';
+                } else {
+                    bola.style.display = 'none';
+                }
+            });
+            
+            document.querySelectorAll('.filtro-letra').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-2');
+                btn.classList.remove('ring-blue-300', 'ring-yellow-300', 'ring-red-300', 'ring-green-300', 'ring-purple-300');
+            });
+            
+            const ringColor = letra === 'B' ? 'ring-blue-300' : 
+                             letra === 'I' ? 'ring-yellow-300' :
+                             letra === 'N' ? 'ring-red-300' :
+                             letra === 'G' ? 'ring-green-300' : 'ring-purple-300';
+            
+            document.getElementById(`filtro-${letra.toLowerCase()}`).classList.add('ring-2', 'ring-offset-2', ringColor);
+        }
+
+        function exportarBolas() {
+            const bolas = <%= JSON.stringify(juego && juego.bolasCantadas ? juego.bolasCantadas : []) %>;
+            
+            function formatoLocal(numero) {
+                if (numero >= 1 && numero <= 15) return `B${numero}`;
+                if (numero >= 16 && numero <= 30) return `I${numero}`;
+                if (numero >= 31 && numero <= 45) return `N${numero}`;
+                if (numero >= 46 && numero <= 60) return `G${numero}`;
+                if (numero >= 61 && numero <= 75) return `O${numero}`;
+                return numero.toString();
+            }
+            
+            const bolasFormateadas = bolas.map(b => formatoLocal(b));
+            const texto = bolasFormateadas.join(', ');
+            
+            navigator.clipboard.writeText(texto).then(() => {
+                mostrarNotificacion('✅ Bolas copiadas al portapapeles', 'success');
+            }).catch(() => {
+                mostrarNotificacion('❌ Error al copiar', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

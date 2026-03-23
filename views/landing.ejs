@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= name_page %> - ¡Diversión Online!</title>
+    <meta name="description" content="<%= name_page %>, diviertete jugando y ganando">
+    <meta name="theme-color" content="#0f172a">
+    
+    <meta property="og:title" content="<%= name_page %> - ¡Diversión Online!">
+    <meta property="og:description" content="<%= name_page %>, diviertete jugando y ganando">
+    <meta property="og:image" content="<%= dominio %>/logo.png">
+    <meta property="og:image:alt" content="<%= name_page %>">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= name_page %> - ¡Diversión Online!">
+    <meta name="twitter:description" content="<%= name_page %>, diviertete jugando y ganando">
+    <meta name="twitter:image" content="<%= dominio %>/logo.png">
+    <meta name="twitter:image:alt" content="<%= name_page %>">
+    
+    <link rel="icon" href="/j-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/j-192.png">
+    
+    <link rel="manifest" href="/manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f172a;
+        }
+        .gold-text {
+            background: linear-gradient(to bottom, #fde68a, #fbbf24, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+        }
+        .card-red {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .8; transform: scale(1.05); }
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out forwards;
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+        .animate-scale-in {
+            animation: scaleIn 0.2s ease-out forwards;
+        }
+    </style>
+    <script src="/js/pwa.js" defer></script>
+</head>
+<body class="text-white">
+    <nav class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center font-bold text-xl border-2 border-yellow-400 shadow-lg shadow-red-500/50 flex-shrink-0">
+                      <img src="/logo.png" class="rounded-full object-cover">
+                    </div>
+                    <span class="font-extrabold text-xl sm:text-2xl tracking-tighter uppercase gold-text leading-tight"><%= name_page %></span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8 font-semibold">
+                    <a href="#" class="hover:text-yellow-400 transition py-2">Home</a>
+                    <a href="#about" class="hover:text-yellow-400 transition py-2">Quienes Somos</a>
+                    <a href="/jugador/login" class="bg-red-600 px-5 py-2.5 rounded-full hover:bg-red-700 transition shadow-lg text-center">Iniciar Sesión</a>
+                </div>
+                
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-white focus:outline-none p-2 hover:bg-white/10 rounded-lg transition" aria-label="Menú">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-white/10">
+            <div class="px-4 pt-2 pb-4 space-y-1 text-center">
+                <a href="#" class="block px-3 py-4 text-base font-bold hover:bg-slate-800 rounded-lg transition border-b border-white/5">Home</a>
+                <a href="#about" class="block px-3 py-4 text-base font-bold hover:bg-slate-800 rounded-lg transition border-b border-white/5">Quienes Somos</a>
+                <a href="/jugador/login" class="block px-3 py-4 text-base font-bold text-yellow-400 hover:bg-slate-800 rounded-lg transition">Iniciar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden hero-gradient">
+        <div class="absolute top-20 left-10 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <h1 class="text-5xl md:text-8xl font-extrabold mb-6 leading-tight">
+                <span class="block">EL MEJOR BINGO</span>
+                <span class="gold-text block mt-2">ONLINE FUN!</span>
+            </h1>
+            <p class="text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto px-4">
+                Únete a la comunidad de <%= name_page %>. Premios increíbles, salas 24/7 y la mayor diversión desde la comodidad de tu casa.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 px-4">
+                <button onclick="window.location.href='/jugador/login'" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 md:px-10 rounded-2xl text-lg md:text-xl shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-all transform hover:scale-105 min-w-[200px]">
+                    ¡JUGAR AHORA!
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-16 bg-slate-950/50">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <div class="bg-white/5 p-6 md:p-8 rounded-3xl border border-white/10 text-center hover:border-red-500/50 transition group">
+                <div class="w-16 h-16 bg-red-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-bolt text-red-500 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Retiros Instantáneos</h3>
+                <p class="text-slate-400 text-sm md:text-base">Recibe tus ganancias de inmediato con total seguridad.</p>
+            </div>
+            <div class="bg-white/5 p-6 md:p-8 rounded-3xl border border-white/10 text-center hover:border-yellow-500/50 transition group">
+                <div class="w-16 h-16 bg-yellow-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-trophy text-yellow-500 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Premios Diarios</h3>
+                <p class="text-slate-400 text-sm md:text-base">Sorteos especiales todos los días.</p>
+            </div>
+            <div class="bg-white/5 p-6 md:p-8 rounded-3xl border border-white/10 text-center hover:border-blue-500/50 transition group">
+                <div class="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-users text-blue-500 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Gran Comunidad</h3>
+                <p class="text-slate-400 text-sm md:text-base">Chatea y diviértete con jugadores en el grupo de WhatsApp.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-16 md:py-20 max-w-7xl mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+            <div class="md:w-1/2 w-full">
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-red-600 to-yellow-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    <div class="relative bg-slate-900 rounded-3xl overflow-hidden aspect-video flex items-center justify-center border border-white/10">
+                        <div class="text-center p-6 md:p-10">
+                            <i class="fa-solid fa-gamepad text-5xl md:text-6xl mb-4 text-red-500"></i>
+                            <p class="font-bold text-xl md:text-2xl uppercase italic">Bingo Experience</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="md:w-1/2 w-full space-y-4 md:space-y-6">
+                <h2 class="text-3xl md:text-4xl font-extrabold uppercase tracking-tight">Sobre <span class="gold-text"><%= name_page %></span></h2>
+                <p class="text-slate-300 text-base md:text-lg leading-relaxed">
+                    Somos la plataforma líder en entretenimiento de Bingo Online, comprometidos con brindar una experiencia segura, transparente y sobre todo emocionante. Con tecnología de vanguardia y un soporte dedicado, <%= name_page %> es el lugar donde la suerte y la amistad se encuentran.
+                </p>
+                <ul class="space-y-2 md:space-y-3">
+                    <li class="flex items-center space-x-3">
+                        <i class="fa-solid fa-check-circle text-green-500 flex-shrink-0"></i>
+                        <span>Licencia de juego autorizada</span>
+                    </li>
+                    <li class="flex items-center space-x-3">
+                        <i class="fa-solid fa-check-circle text-green-500 flex-shrink-0"></i>
+                        <span>Soporte al cliente 24/7</span>
+                    </li>
+                    <li class="flex items-center space-x-3">
+                        <i class="fa-solid fa-check-circle text-green-500 flex-shrink-0"></i>
+                        <span>Juego Responsable</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-950 pt-12 md:pt-16 pb-6 md:pb-8 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-6 md:mb-8">
+                <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm border border-yellow-400">
+                  <img src="/logo.png" class="rounded-full object-cover">
+                </div>
+                <span class="font-bold text-lg md:text-xl gold-text"><%= name_page %></span>
+            </div>
+            <div class="flex justify-center space-x-6 mb-6 md:mb-8 text-slate-400">
+                <a href="#" class="hover:text-white transition transform hover:scale-110"><i class="fa-brands fa-facebook text-2xl"></i></a>
+                <a href="#" class="hover:text-white transition transform hover:scale-110"><i class="fa-brands fa-instagram text-2xl"></i></a>
+                <a href="#" class="hover:text-white transition transform hover:scale-110"><i class="fa-brands fa-tiktok text-2xl"></i></a>
+            </div>
+            <%- include("partials/footer") %>
+            <p class="text-sm md:text-base mt-4">
+                <span class="text-slate-400">Desarrollado por</span>
+                <a href="https://wa.me/17755107666" target="_blank" rel="noopener noreferrer" 
+                   class="text-yellow-400 font-semibold ml-1 hover:text-yellow-300 transition-colors duration-300">
+                    DarkBox
+                </a>
+            </p>
+        </div>
+    </footer>
+    <div class="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-[60] flex flex-col items-end">
+        <div id="ws-modal" class="hidden mb-4 bg-white text-slate-900 p-4 rounded-2xl shadow-2xl w-72 animate-scale-in origin-bottom-right">
+            <div class="flex justify-between items-center mb-3">
+                <span class="font-bold text-lg">¿Cómo podemos ayudarte?</span>
+                <button onclick="toggleModal()" class="text-slate-400 hover:text-red-500 transition p-1 hover:bg-slate-100 rounded-full" aria-label="Cerrar">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-2">
+                <a href="https://wa.me/584246566214" target="_blank" class="flex items-center space-x-3 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition-all text-green-700 font-semibold border border-green-200 group">
+                    <i class="fa-solid fa-headset text-xl group-hover:scale-110 transition"></i>
+                    <span class="flex-1">Contactar Soporte</span>
+                </a>
+                <a href="https://chat.whatsapp.com/Fn1epFVJ7sE5FbsyG0ZT6F?mode=gi_t" class="flex items-center space-x-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all text-blue-700 font-semibold border border-blue-200 group">
+                    <i class="fa-solid fa-users-viewfinder text-xl group-hover:scale-110 transition"></i>
+                    <span class="flex-1">Entrar al Grupo</span>
+                </a>
+            </div>
+        </div>
+        
+        <button id="ws-trigger" class="bg-green-500 hover:bg-green-600 text-white w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95 animate-pulse-slow" aria-label="WhatsApp">
+            <i class="fa-brands fa-whatsapp text-2xl md:text-4xl"></i>
+        </button>
+    </div>
+
+    <script>
+        const menuBtn = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        menuBtn.addEventListener('click', () => {
+            if (mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.remove('hidden');
+                mobileMenu.classList.add('animate-fade-in-down');
+                setTimeout(() => {
+                    mobileMenu.classList.remove('animate-fade-in-down');
+                }, 300);
+            } else {
+                mobileMenu.classList.add('animate-fade-in-up');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('animate-fade-in-up');
+                }, 280);
+            }
+        });
+
+        const wsTrigger = document.getElementById('ws-trigger');
+        const wsModal = document.getElementById('ws-modal');
+
+        function toggleModal() {
+            if (wsModal.classList.contains('hidden')) {
+                wsModal.classList.remove('hidden');
+                wsModal.classList.add('animate-scale-in');
+                setTimeout(() => {
+                    wsModal.classList.remove('animate-scale-in');
+                }, 200);
+            } else {
+                wsModal.classList.add('animate-fade-in-up');
+                setTimeout(() => {
+                    wsModal.classList.add('hidden');
+                    wsModal.classList.remove('animate-fade-in-up');
+                }, 180);
+            }
+        }
+
+        wsTrigger.addEventListener('click', toggleModal);
+
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('animate-fade-in-up');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('animate-fade-in-up');
+                }, 280);
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wsModal.contains(e.target) && !wsTrigger.contains(e.target) && !wsModal.classList.contains('hidden')) {
+                toggleModal();
+            }
+        });
+    </script>
+</body>
+</html>

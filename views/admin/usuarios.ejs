@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestión de Usuarios - <%= name_page %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+        }
+
+        /* Cards */
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Inputs */
+        .input-moderno {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .input-moderno:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Botones */
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: scale(1.02);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: scale(1.02);
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #e5e7eb;
+            color: #374151;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline:hover {
+            border-color: #9ca3af;
+        }
+
+        /* Badge de estado */
+        .estado-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Chips de cartones */
+        .carton-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .carton-chip:hover {
+            transform: scale(1.05);
+            background: #bfdbfe;
+        }
+
+        .carton-chip button {
+            color: #6b7280;
+            font-weight: bold;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .carton-chip button:hover {
+            color: #ef4444;
+        }
+
+        /* Usuario card */
+        .usuario-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+        .usuario-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mobile-stack {
+                flex-direction: column;
+            }
+            
+            .mobile-full {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <!-- Navbar mejorada y responsive -->
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-9 h-9 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center font-bold text-white border-2 border-yellow-400 shadow-md">
+                          <img src="/logo.png" class="rounded-full object-cover">
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-gray-800">Usuarios</h1>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <!-- Estado en tiempo real -->
+                    <div id="estadoHeader" class="estado-badge 
+                        <%= juego && juego.estado === 'jugando' ? 'bg-green-100 text-green-800 border-2 border-green-200' : 
+                           juego && juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' : 
+                           'bg-gray-100 text-gray-800 border-2 border-gray-200' %>">
+                        <span class="w-2 h-2 rounded-full <%= juego && juego.estado === 'jugando' ? 'bg-green-500 animate-pulse' : 
+                                                             juego && juego.estado === 'pausado' ? 'bg-yellow-500' : 
+                                                             'bg-gray-500' %>"></span>
+                        <span><%= juego ? juego.estado : 'esperando' %></span>
+                    </div>
+
+                    <!-- Menú de usuario -->
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition">
+                            <i class="fa-regular fa-circle-user text-xl text-gray-600"></i>
+                            <span class="text-sm font-medium hidden sm:inline">Admin</span>
+                            <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 hidden group-hover:block">
+                            <a href="/admin/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa-solid fa-chart-pie mr-2 text-blue-500"></i>Dashboard
+                            </a>
+                            <a href="/admin/control" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa fa-gamepad mr-2 text-blue-500"></i>Juego
+                            </a>
+                            <a href="/admin/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl">
+                                <i class="fa-solid fa-sign-out-alt mr-2"></i>Cerrar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-gray-400 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <a href="/admin/dashboard" class="hover:text-blue-600">Dashboard</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-gray-600">Gestión de Usuarios</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-4 sm:py-6">
+        <!-- Formulario para crear/editar usuario -->
+        <div class="stat-card mb-6">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-green-600"></i>
+                Nuevo Usuario / Asignar Cartones
+            </h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Código -->
+                <div>
+                    <label class="block text-gray-700 text-xs sm:text-sm font-semibold mb-2">
+                        <i class="fa-solid fa-key mr-1 text-blue-500"></i>
+                        Código de acceso *
+                    </label>
+                    <input type="text" 
+                           id="codigoUsuario" 
+                           class="input-moderno uppercase text-sm"
+                           placeholder="Ej: JUAN123"
+                           maxlength="10">
+                </div>
+                
+                <!-- Nombre -->
+                <div>
+                    <label class="block text-gray-700 text-xs sm:text-sm font-semibold mb-2">
+                        <i class="fa-regular fa-user mr-1 text-blue-500"></i>
+                        Nombre (opcional)
+                    </label>
+                    <input type="text" 
+                           id="nombreUsuario" 
+                           class="input-moderno text-sm"
+                           placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <!-- Número de cartón -->
+                <div>
+                    <label class="block text-gray-700 text-xs sm:text-sm font-semibold mb-2">
+                        <i class="fa-solid fa-hashtag mr-1 text-purple-500"></i>
+                        Número de cartón
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="number" 
+                           id="inputCarton" 
+                           min="1" 
+                           max="1000"
+                           oninput="if(this.value > 1000) this.value = 1000;"
+                           class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-center text-sm"
+                           placeholder="1-1000">
+                        <button onclick="agregarCartonManual()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap text-sm flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i>
+                            <span class="hidden sm:inline">Agregar</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Máximo 4 cartones</p>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="flex items-end gap-2">
+                    <button onclick="guardarUsuario()" 
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition text-sm flex items-center justify-center gap-1">
+                        <i class="fa-regular fa-floppy-disk"></i>
+                        <span>Guardar</span>
+                    </button>
+                    <button onclick="limpiarFormulario()" 
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition text-sm flex items-center justify-center gap-1">
+                        <i class="fa-regular fa-trash-can"></i>
+                        <span class="hidden sm:inline">Limpiar</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de cartones seleccionados -->
+            <div class="mt-4">
+                <label class="block text-gray-700 text-sm font-semibold mb-2">
+                    <i class="fa-regular fa-rectangle-list mr-1 text-blue-500"></i>
+                    Cartones seleccionados:
+                </label>
+                <div id="cartonesSeleccionados" class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg min-h-[60px] border border-gray-100">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+            
+        <!-- Lista de usuarios -->
+        <div class="stat-card">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-blue-600"></i>
+                    Usuarios Activos
+                </h2>
+                <button onclick="refrescarUsuarios()" 
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm transition flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span class="hidden sm:inline">Refrescar</span>
+                </button>
+            </div>
+            
+            <div id="usuariosContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <% if (usuarios && usuarios.length > 0) { %>
+                    <% usuarios.forEach(usuario => { %>
+                        <div class="usuario-card">
+                            <!-- Header del usuario -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-base sm:text-lg truncate max-w-[120px]"><%= usuario.codigoAcceso %></span>
+                                        <% if (usuario.nombre) { %>
+                                            <span class="text-xs sm:text-sm text-gray-600 truncate max-w-[100px]">(<%= usuario.nombre %>)</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                <span class="estado-badge bg-green-100 text-green-800 border border-green-200 text-xs flex-shrink-0">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    Activo
+                                </span>
+                            </div>
+                            
+                            <!-- Cartones -->
+                            <div class="mb-3">
+                                <span class="text-xs text-gray-500 block mb-1">Cartones asignados:</span>
+                                <div class="flex flex-wrap gap-1">
+                                    <% if (usuario.cartonesAsignados && usuario.cartonesAsignados.length > 0) { %>
+                                        <% usuario.cartonesAsignados.forEach(carton => { %>
+                                            <span class="carton-chip text-xs font-mono">
+                                                #<%= String(carton).padStart(3, '0') %>
+                                            </span>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <span class="text-xs text-gray-400 italic">Sin cartones</span>
+                                    <% } %>
+                                </div>
+                            </div>
+                            
+                            <!-- Última conexión -->
+                            <div class="text-xs text-gray-400 mb-3 flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i>
+                                <%= new Date(usuario.ultimaConexion).toLocaleString() %>
+                            </div>
+                            
+                            <!-- Botones de acción -->
+                            <div class="flex gap-2">
+                                <button onclick="editarUsuario('<%= usuario.codigoAcceso %>')" 
+                                        class="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm py-1.5 rounded-lg transition flex items-center justify-center gap-1">
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button onclick="desactivarUsuario('<%= usuario.codigoAcceso %>')" 
+                                        class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm py-1.5 rounded-lg transition flex items-center justify-center gap-1">
+                                    <i class="fa-regular fa-circle-xmark"></i>
+                                    <span>Desactivar</span>
+                                </button>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="col-span-full text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <i class="fa-regular fa-face-frown text-4xl mb-2 text-gray-400"></i>
+                        <p>No hay usuarios registrados</p>
+                        <p class="text-xs mt-1">Crea tu primer usuario usando el formulario</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación flotante -->
+    <div id="notificacion" class="fixed top-20 right-4 transform transition-all duration-500 translate-x-full z-50">
+        <div class="bg-white rounded-xl shadow-2xl border-l-4 border-green-500 px-4 py-3 flex items-center gap-3 min-w-[280px] max-w-[90vw]">
+            <div id="notificacion-icono" class="text-green-500 text-xl">
+                <i class="fa-regular fa-circle-check"></i>
+            </div>
+            <div class="flex-1">
+                <p id="notificacion-titulo" class="font-semibold text-gray-800 text-sm">Éxito</p>
+                <p id="notificacion-mensaje" class="text-xs text-gray-600">Operación completada</p>
+            </div>
+            <button onclick="cerrarNotificacion()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-regular fa-circle-xmark"></i>
+            </button>
+        </div>
+    </div>
+    
+<script>
+    const socket = io();
+    let cartonesSeleccionados = [];
+    
+    // --- CONFIGURACIÓN ---
+    const MAX_CARTONES_GLOBAL = 1000; // Coincide con tu nuevo límite de BD
+    const MAX_POR_USUARIO = 4;
+
+    // Sistema de notificaciones
+    function mostrarNotificacion(mensaje, tipo = 'success', duracion = 3000) {
+        const notif = document.getElementById('notificacion');
+        const icono = document.getElementById('notificacion-icono');
+        const titulo = document.getElementById('notificacion-titulo');
+        const mensajeEl = document.getElementById('notificacion-mensaje');
+        
+        const config = {
+            success: { color: 'border-green-500', icono: 'fa fa-check-circle', titulo: 'Éxito' },
+            warning: { color: 'border-yellow-500', icono: 'fa fa-exclamation-triangle', titulo: 'Atención' },
+            error: { color: 'border-red-500', icono: 'fa fa-exclamation-circle', titulo: 'Error' },
+            info: { color: 'border-blue-500', icono: 'fa fa-info-circle', titulo: 'Información' }
+        };
+        
+        const conf = config[tipo] || config.success;
+        
+        notif.querySelector('div').className = `bg-white rounded-xl shadow-2xl border-l-4 ${conf.color} px-4 py-3 flex items-center gap-3 min-w-[280px] max-w-[90vw]`;
+        icono.innerHTML = `<i class="${conf.icono}"></i>`;
+        
+        let iconColor = 'text-green-500';
+        if (tipo === 'warning') iconColor = 'text-yellow-500';
+        if (tipo === 'error') iconColor = 'text-red-500';
+        if (tipo === 'info') iconColor = 'text-blue-500';
+        icono.className = `${iconColor} text-xl`;
+        
+        titulo.textContent = conf.titulo;
+        mensajeEl.textContent = mensaje;
+        
+        notif.classList.remove('translate-x-full');
+        notif.classList.add('translate-x-0');
+        
+        setTimeout(() => {
+            cerrarNotificacion();
+        }, duracion);
+    }
+    
+    function cerrarNotificacion() {
+        const notif = document.getElementById('notificacion');
+        if(notif) {
+            notif.classList.add('translate-x-full');
+            notif.classList.remove('translate-x-0');
+        }
+    }
+    
+    // Agregar cartón a la lista - ACTUALIZADO A 1000
+    function agregarCartonManual() {
+        const input = document.getElementById('inputCarton');
+        const carton = parseInt(input.value);
+        
+        if (!carton || isNaN(carton)) {
+            mostrarNotificacion('Ingresa un número de cartón válido', 'warning');
+            return;
+        }
+        
+        // CORRECCIÓN: Ahora permite hasta el MAX_CARTONES_GLOBAL (1000)
+        if (carton < 1 || carton > MAX_CARTONES_GLOBAL) {
+            mostrarNotificacion(`El cartón debe estar entre 1 y ${MAX_CARTONES_GLOBAL}`, 'warning');
+            return;
+        }
+        
+        if (cartonesSeleccionados.length >= MAX_POR_USUARIO) {
+            mostrarNotificacion(`Máximo ${MAX_POR_USUARIO} cartones por usuario`, 'warning');
+            return;
+        }
+        
+        if (cartonesSeleccionados.includes(carton)) {
+            mostrarNotificacion('Este cartón ya está seleccionado', 'warning');
+            return;
+        }
+        
+        cartonesSeleccionados.push(carton);
+        actualizarListaCartones();
+        input.value = '';
+        input.focus();
+    }
+
+    function eliminarCarton(carton) {
+        cartonesSeleccionados = cartonesSeleccionados.filter(c => c !== carton);
+        actualizarListaCartones();
+    }
+
+    function actualizarListaCartones() {
+        const container = document.getElementById('cartonesSeleccionados');
+        if (!container) return;
+        
+        if (cartonesSeleccionados.length === 0) {
+            container.innerHTML = '<span class="text-gray-400 text-sm">No hay cartones seleccionados</span>';
+            return;
+        }
+        
+        cartonesSeleccionados.sort((a, b) => a - b);
+        
+        container.innerHTML = cartonesSeleccionados.map(carton => `
+            <span class="carton-chip bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-sm font-bold flex items-center gap-1">
+                #${carton}
+                <button onclick="eliminarCarton(${carton})" class="ml-1 hover:text-red-500 transition text-lg">&times;</button>
+            </span>
+        `).join('');
+    }
+            
+      function limpiarFormulario(silencioso = false) {
+            document.getElementById('codigoUsuario').value = '';
+            document.getElementById('nombreUsuario').value = '';
+            document.getElementById('inputCarton').value = '';
+            cartonesSeleccionados = [];
+            actualizarListaCartones();
+            
+            // Solo mostrar la notificación si NO es silencioso (clic manual en el botón basura)
+            if (!silencioso) {
+                mostrarNotificacion('Formulario limpiado', 'info', 1500);
+            }
+        }
+
+    function guardarUsuario() {
+            const codigo = document.getElementById('codigoUsuario').value.trim().toUpperCase();
+            const nombre = document.getElementById('nombreUsuario').value.trim() || 'Jugador';
+            
+            if (!codigo) {
+                mostrarNotificacion('El código es requerido', 'warning');
+                return;
+            }
+            
+            if (cartonesSeleccionados.length === 0) {
+                mostrarNotificacion('Debes seleccionar al menos un cartón', 'warning');
+                return;
+            }
+
+            // Cambiar el botón a estado "Guardando..." para evitar doble clic
+            const btnGuardar = event.target.closest('button');
+            const originalHTML = btnGuardar.innerHTML;
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> <span>Guardando...</span>';
+            
+            fetch('/admin/api/usuarios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codigo: codigo,
+                    nombre: nombre,
+                    cartones: cartonesSeleccionados
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // 1. Mostrar el éxito primero
+                    mostrarNotificacion('✅ Usuario guardado correctamente', 'success', 4000);
+                    // 2. Limpiar el formulario sin mostrar la notificación de "limpiado"
+                    limpiarFormulario(true); 
+                    // 3. Refrescar la lista
+                    refrescarUsuarios();
+                } else {
+                    mostrarNotificacion('❌ Error: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                mostrarNotificacion('❌ Error de conexión con el servidor', 'error');
+            })
+            .finally(() => {
+                // Restaurar el botón
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = originalHTML;
+            });
+    }
+    
+    function editarUsuario(codigo) {
+        fetch('/admin/api/usuarios')
+            .then(res => res.json())
+            .then(data => {
+                const usuario = data.usuarios.find(u => u.codigoAcceso === codigo);
+                if (usuario) {
+                    document.getElementById('codigoUsuario').value = usuario.codigoAcceso;
+                    document.getElementById('nombreUsuario').value = usuario.nombre || '';
+                    cartonesSeleccionados = [...(usuario.cartonesAsignados || [])];
+                    actualizarListaCartones();
+                    mostrarNotificacion(`Editando usuario ${codigo}`, 'info');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+    }
+    
+        function desactivarUsuario(codigo) {
+            if (!confirm(`¿Desactivar usuario ${codigo}?`)) return;
+            
+            fetch('/admin/api/usuarios/desactivar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo: codigo })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarNotificacion('✅ Usuario desactivado', 'success');
+                   refrescarUsuarios(); 
+                } else {
+                    mostrarNotificacion('❌ Error: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error("Error al desactivar:", err);
+                mostrarNotificacion('❌ Error de conexión', 'error');
+            });
+        }
+
+    
+    function refrescarUsuarios() {
+        fetch('/admin/api/usuarios')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('usuariosContainer');
+                    if (!container) return;
+                    
+                    if (data.usuarios.length === 0) {
+                        container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200"><p>No hay usuarios registrados</p></div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.usuarios.map(usuario => `
+                        <div class="usuario-card p-4 border rounded-xl shadow-sm bg-white mb-3">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-lg text-indigo-600">${usuario.codigoAcceso}</span>
+                                        <span class="text-sm text-gray-500 truncate">${usuario.nombre || ''}</span>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] uppercase font-bold">Activo</span>
+                            </div>
+                            
+                            <div class="mb-4 flex flex-wrap gap-2">
+                                ${usuario.cartonesAsignados.map(c => `
+                                    <span class="bg-gray-100 px-2 py-0.5 rounded border text-xs font-mono">#${String(c).padStart(3, '0')}</span>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="editarUsuario('${usuario.codigoAcceso}')" class="flex-1 bg-amber-500 text-white text-xs py-2 rounded-lg hover:bg-amber-600 transition">Editar</button>
+                                <button onclick="desactivarUsuario('${usuario.codigoAcceso}')" class="flex-1 bg-red-100 text-red-600 text-xs py-2 rounded-lg hover:bg-red-200 transition">Quitar</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(err => {
+              console.error("Error al refrescar:", err);
+            });
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarListaCartones();
+        refrescarUsuarios();
+        
+        socket.on('lista-usuarios', () => refrescarUsuarios());
+        
+        document.getElementById('inputCarton').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarCartonManual();
+            }
+        });
+    });
+    
+    setInterval(refrescarUsuarios, 15000);
+</script>
+</body>
+</html>

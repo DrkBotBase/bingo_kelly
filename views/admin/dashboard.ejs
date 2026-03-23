@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inicio Admin - <%= name_page %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .bola-nueva {
+            animation: slideIn 0.3s ease;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            border: 1px solid #f0f0f0;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .stat-mini {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #f0f0f0;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-warning:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-purple:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-indigo {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-indigo:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Badge de estado */
+        .estado-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Tabla */
+        .tabla-container {
+            overflow-x: auto;
+            border-radius: 0.75rem;
+            border: 1px solid #f0f0f0;
+        }
+
+        .tabla {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabla th {
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tabla td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+
+        .tabla tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tabla tr:hover td {
+            background: #f9fafb;
+        }
+
+        /* Bola del historial */
+        .bola-historial {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .bola-historial:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Input */
+        .input-moderno {
+            padding: 0.625rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            width: 100%;
+        }
+
+        .input-moderno:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mobile-stack {
+                flex-direction: column;
+            }
+            
+            .mobile-full {
+                width: 100%;
+            }
+            
+            .bola-historial {
+                width: 2rem;
+                height: 2rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <!-- Navbar mejorada y responsive -->
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-9 h-9 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center font-bold text-white border-2 border-yellow-400 shadow-md">
+                          <img src="/logo.png" class="rounded-full object-cover">
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-gray-800">Inicio</h1>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <!-- Estado en tiempo real -->
+                    <div id="estadoHeader" class="estado-badge 
+                        <%= juego && juego.estado === 'jugando' ? 'bg-green-100 text-green-800 border-2 border-green-200' : 
+                           juego && juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' : 
+                           'bg-gray-100 text-gray-800 border-2 border-gray-200' %>">
+                        <span class="w-2 h-2 rounded-full <%= juego && juego.estado === 'jugando' ? 'bg-green-500 animate-pulse' : 
+                                                             juego && juego.estado === 'pausado' ? 'bg-yellow-500' : 
+                                                             'bg-gray-500' %>"></span>
+                        <span><%= juego ? juego.estado : 'esperando' %></span>
+                    </div>
+
+                    <!-- Menú de usuario -->
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition">
+                            <i class="fa-regular fa-circle-user text-xl text-gray-600"></i>
+                            <span class="text-sm font-medium hidden sm:inline">Admin</span>
+                            <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 hidden group-hover:block">
+                            <a href="/admin/control" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa-solid fa-gamepad mr-2 text-blue-500"></i>Juego
+                            </a>
+                            <a href="/admin/usuarios" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa fa-users mr-2 text-blue-500"></i>Usuarios
+                            </a>
+                            <a href="/admin/cartones" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa fa-ticket mr-2 text-blue-500"></i>Cartones
+                            </a>
+                            <a href="/admin/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl">
+                                <i class="fa-solid fa-sign-out-alt mr-2"></i>Cerrar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-gray-400 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <span class="hover:text-blue-600">Inicio</span>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-gray-600">Panel Principal</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-4 sm:py-6">
+        <!-- Tarjetas de estadísticas principales -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Estado del juego -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider">Estado del juego</h3>
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-gamepad text-blue-600 text-sm"></i>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl font-bold text-gray-800" id="estadoTexto">
+                        <%= juego ? juego.estado : 'esperando' %>
+                    </span>
+                    <span class="estado-badge
+                        <%= juego && juego.estado === 'jugando' ? 'bg-green-100 text-green-800' : 
+                           juego && juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800' : 
+                           'bg-gray-100 text-gray-800' %>"
+                          id="estadoBadge">
+                        <%= juego ? juego.estado : 'esperando' %>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Jugadores conectados -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider">Jugadores Conectados</h3>
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-users text-green-600 text-sm"></i>
+                    </div>
+                </div>
+                <div class="flex items-end justify-between">
+                    <div>
+                        <span class="text-2xl font-bold text-gray-800" id="jugadoresConectados">
+                            <%= estadisticas ? estadisticas.cartonesActivos : 0 %>
+                        </span>
+                        <span class="text-xs text-gray-500 ml-1">activos</span>
+                    </div>
+                    <span class="text-xs text-gray-400">Total: <%= estadisticas ? estadisticas.totalCartones : 1000 %></span>
+                </div>
+            </div>
+            
+            <!-- Bolas cantadas -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider">Bolas Cantadas</h3>
+                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-dice text-purple-600 text-sm"></i>
+                    </div>
+                </div>
+                <div class="flex items-end justify-between">
+                    <span class="text-2xl font-bold text-gray-800" id="totalBolas">
+                        <%= estadisticas ? estadisticas.bolasCantadas : 0 %>
+                    </span>
+                    <span class="text-xs text-gray-400">Última: <span id="ultimaBola" class="font-semibold text-blue-600"><%= juego && juego.ultimaBola ? juego.ultimaBola : '-' %></span></span>
+                </div>
+            </div>
+            
+            <!-- Modalidad -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider">Modalidad</h3>
+                    <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-trophy text-amber-600 text-sm"></i>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-lg font-bold text-gray-800 truncate" id="modalidadActual">
+                        <%= juego && juego.modalidad ? juego.modalidad : 'No definida' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráficos y controles rápidos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Últimas bolas -->
+            <div class="stat-card lg:col-span-1">
+                <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-regular fa-clock text-blue-600"></i>
+                    Últimas bolas
+                </h2>
+                
+                <div id="ultimasBolas" class="flex flex-wrap gap-2 mb-4 min-h-[100px]">
+                    <% if (juego && juego.ganador && juego.ganador.cartonId) { %>
+                        <div class="w-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse">
+                            <i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #<%= juego.ganador.cartonId %> (<%= juego.ganador.tipo %>)
+                        </div>
+                    <% } %>
+                    <% if (juego && juego.bolasCantadas && juego.bolasCantadas.length > 0) { %>
+                        <% juego.bolasCantadas.slice(-15).reverse().forEach(bola => { 
+                            const color = 
+                                bola <= 15 ? 'bg-blue-500' :
+                                bola <= 30 ? 'bg-yellow-500' :
+                                bola <= 45 ? 'bg-red-500' :
+                                bola <= 60 ? 'bg-green-500' : 'bg-purple-500';
+                        %>
+                            <span class="bola-historial <%= color %>">
+                                <%= bola %>
+                            </span>
+                        <% }); %>
+                    <% } else { %>
+                        <p class="text-gray-400 text-sm flex items-center gap-2 w-full justify-center py-6">
+                            <i class="fa fa-frown-o"></i>
+                            No hay bolas cantadas
+                        </p>
+                    <% } %>
+                </div>
+                
+                <!-- Control rápido de bola -->
+                <div class="border-t border-gray-100 pt-4">
+                    <h3 class="font-semibold text-sm mb-3 flex items-center gap-1">
+                        <i class="fa-solid fa-microphone text-green-500"></i>
+                        Cantar bola rápida
+                    </h3>
+                    <div class="flex gap-2">
+                        <input type="number" id="bolaRapida" min="1" max="75" 
+                               class="input-moderno text-center"
+                               placeholder="1-75">
+                        <button onclick="cantarBola()" 
+                                class="btn-success px-4 py-2 text-sm whitespace-nowrap">
+                            <i class="fa-solid fa-play"></i>
+                            <span class="hidden sm:inline">Cantar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Jugadores activos -->
+            <div class="stat-card lg:col-span-2">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-users text-green-600"></i>
+                        Jugadores en línea
+                    </h2>
+                    <button onclick="refrescarJugadores()" class="text-gray-400 hover:text-blue-600 transition">
+                        <i class="fa fa-repeat"></i>
+                    </button>
+                </div>
+                
+                <div class="tabla-container">
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th>Cartón</th>
+                                <th>Estado</th>
+                                <th class="hidden md:table-cell">Modo</th>
+                                <th>Marcados</th>
+                                <th class="hidden lg:table-cell">Conexión</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaJugadores">
+                            <% if (cartones && cartones.length > 0) { %>
+                                <% cartones.slice(0, 5).forEach(carton => { %>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="font-semibold">#<%= carton.numeroCarton %></td>
+                                        <td>
+                                            <% if (carton.socketId) { %>
+                                                <span class="estado-badge bg-green-100 text-green-800 text-xs">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                                    <span class="hidden sm:inline">En línea</span>
+                                                </span>
+                                            <% } else { %>
+                                                <span class="estado-badge bg-gray-100 text-gray-800 text-xs">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                                                    <span class="hidden sm:inline">Offline</span>
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td class="hidden md:table-cell">
+                                            <%= carton.modoMarcado === 'automatico' ? 
+                                                '<span class="text-purple-600">🤖 Auto</span>' : 
+                                                '<span class="text-gray-600">👆 Manual</span>' %>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-1">
+                                                <span class="font-semibold"><%= carton.marcados ? carton.marcados.length : 0 %></span>
+                                                <span class="text-xs text-gray-400">/25</span>
+                                            </div>
+                                        </td>
+                                        <td class="hidden lg:table-cell text-xs text-gray-500">
+                                            <%= carton.ultimaConexion ? new Date(carton.ultimaConexion).toLocaleTimeString() : 'Nunca' %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fa fa-frown-o text-2xl mb-2 block"></i>
+                                        No hay jugadores conectados
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Ver todos los cartones -->
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-xs text-gray-400">
+                        Mostrando 5 de <%= cartones ? cartones.length : 0 %> cartones
+                    </span>
+                    <button onclick="verTodosLosCartones()" class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                        Ver todos
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acciones rápidas -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <button onclick="reiniciarJuego()" 
+                    class="btn-warning py-3 text-sm">
+                <i class="fa fa-undo"></i>
+                <span class="sm:inline">Reiniciar</span>
+            </button>
+            <!--
+            <button onclick="generarReporte()" 
+                    class="btn-primary py-3 text-sm">
+                <i class="fa fa-pie-chart"></i>
+                <span class="sm:inline">Reporte</span>
+            </button>
+            -->
+            
+            <button onclick="location.href='/admin/control'" 
+                    class="btn-purple py-3 text-sm">
+                <i class="fa fa-gamepad"></i>
+                <span class="sm:inline">Juego</span>
+            </button>
+            
+            <button onclick="location.href='/admin/cartones'" 
+                    class="btn-indigo py-3 text-sm">
+                <i class="fa fa-ticket"></i>
+                <span class="sm:inline">Cartones</span>
+            </button>
+            
+            <button onclick="location.href='/admin/usuarios'" 
+                    class="btn-success py-3 text-sm">
+                <i class="fa fa-users"></i>
+                <span class="sm:inline">Usuarios</span>
+            </button>
+            
+            <button onclick="reiniciarTodo()" 
+                    class="btn-danger py-3 text-sm">
+                <i class="fa fa-bomb"></i>
+                <span class="sm:inline">Reset Total</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notificación flotante -->
+    <div id="notificacion" class="fixed top-20 right-4 transform transition-all duration-500 translate-x-full z-50">
+        <div class="bg-white rounded-xl shadow-2xl border-l-4 border-green-500 px-4 py-3 flex items-center gap-3 min-w-[280px] max-w-[90vw]">
+            <div id="notificacion-icono" class="text-green-500 text-xl">
+                <i class="fa-regular fa-circle-check"></i>
+            </div>
+            <div class="flex-1">
+                <p id="notificacion-titulo" class="font-semibold text-gray-800 text-sm">Éxito</p>
+                <p id="notificacion-mensaje" class="text-xs text-gray-600">Operación completada</p>
+            </div>
+            <button onclick="cerrarNotificacion()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-regular fa-circle-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        function mostrarNotificacion(mensaje, tipo = 'success', duracion = 3000) {
+            const notif = document.getElementById('notificacion');
+            const icono = document.getElementById('notificacion-icono');
+            const titulo = document.getElementById('notificacion-titulo');
+            const mensajeEl = document.getElementById('notificacion-mensaje');
+            
+            const config = {
+                success: { color: 'border-green-500', icono: 'fa fa-check-circle', titulo: 'Éxito' },
+                warning: { color: 'border-yellow-500', icono: 'fa fa-exclamation-triangle', titulo: 'Atención' },
+                error: { color: 'border-red-500', icono: 'fa fa-exclamation-circle', titulo: 'Error' },
+                info: { color: 'border-blue-500', icono: 'fa fa-info-circle', titulo: 'Información' }
+            };
+            
+            const conf = config[tipo] || config.success;
+            
+            notif.querySelector('div').className = `bg-white rounded-xl shadow-2xl border-l-4 ${conf.color} px-4 py-3 flex items-center gap-3 min-w-[280px] max-w-[90vw]`;
+            icono.innerHTML = `<i class="${conf.icono}"></i>`;
+            
+            let iconColor = 'text-green-500';
+            if (tipo === 'warning') iconColor = 'text-yellow-500';
+            if (tipo === 'error') iconColor = 'text-red-500';
+            if (tipo === 'info') iconColor = 'text-blue-500';
+            icono.className = `${iconColor} text-xl`;
+            
+            titulo.textContent = conf.titulo;
+            mensajeEl.textContent = mensaje;
+            
+            notif.classList.remove('translate-x-full');
+            notif.classList.add('translate-x-0');
+            
+            setTimeout(() => {
+                cerrarNotificacion();
+            }, duracion);
+        }
+        
+        function cerrarNotificacion() {
+            const notif = document.getElementById('notificacion');
+            notif.classList.add('translate-x-full');
+            notif.classList.remove('translate-x-0');
+        }
+        
+        socket.on('nueva-bola', (data) => {
+            document.getElementById('totalBolas').textContent = data.bolasCantadas.length;
+            document.getElementById('ultimaBola').textContent = data.formato || data.numero;
+            
+            const contenedor = document.getElementById('ultimasBolas');
+            
+            if (contenedor.children.length === 1 && contenedor.children[0].tagName === 'P') {
+                contenedor.innerHTML = '';
+            }
+            
+            const num = data.numero;
+            const color = num <= 15 ? 'bg-blue-500' :
+                         num <= 30 ? 'bg-yellow-500' :
+                         num <= 45 ? 'bg-red-500' :
+                         num <= 60 ? 'bg-green-500' : 'bg-purple-500';
+            
+            const bolaElement = document.createElement('span');
+            bolaElement.className = `bola-historial ${color} bola-nueva`;
+            bolaElement.textContent = num;
+            contenedor.prepend(bolaElement);
+            
+            while (contenedor.children.length > 15) {
+                contenedor.removeChild(contenedor.lastChild);
+            }
+            
+            mostrarNotificacion(`🎲 Nueva bola: ${data.formato || num}`, 'info', 2000);
+        });
+        
+        socket.on('juego-iniciado', (data) => {
+            document.getElementById('estadoTexto').textContent = 'jugando';
+            document.getElementById('estadoBadge').textContent = 'jugando';
+            document.getElementById('estadoBadge').className = 'estado-badge bg-green-100 text-green-800';
+            document.getElementById('modalidadActual').textContent = data.modalidad;
+            mostrarNotificacion('🎮 Juego iniciado', 'success');
+        });
+        
+        socket.on('juego-pausado', () => {
+            document.getElementById('estadoTexto').textContent = 'pausado';
+            document.getElementById('estadoBadge').textContent = 'pausado';
+            document.getElementById('estadoBadge').className = 'estado-badge bg-yellow-100 text-yellow-800';
+            mostrarNotificacion('⏸️ Juego pausado', 'warning');
+        });
+        
+        socket.on('juego-terminado', (data) => {
+            document.getElementById('estadoTexto').textContent = 'finalizado';
+            document.getElementById('estadoBadge').textContent = 'finalizado';
+            document.getElementById('estadoBadge').className = 'estado-badge bg-gray-100 text-gray-800';
+
+            if (data.cartonId && data.tipo) {
+                mostrarNotificacion(`🏆 Ganador: Cartón #${data.cartonId} (${data.tipo})`, 'success', 5000);
+
+                const contenedor = document.getElementById('ultimasBolas');
+                if (contenedor.children.length === 1 && contenedor.children[0].tagName === 'P') {
+                    contenedor.innerHTML = '';
+                }
+
+                const ganadorEl = document.createElement('div');
+                ganadorEl.className = 'w-full bg-yellow-100 text-yellow-800 p-3 rounded-lg font-bold text-center border-2 border-yellow-300 mb-2 shadow-sm animate-pulse';
+                ganadorEl.innerHTML = `<i class="fa-solid fa-trophy mr-2 text-yellow-600"></i> GANADOR: Cartón #${data.cartonId} (${data.tipo})`;
+                contenedor.prepend(ganadorEl);
+            } else {
+                mostrarNotificacion(data.mensaje || '🏁 Juego finalizado', 'info');
+            }
+        });
+        
+        function cantarBola() {
+            const numero = document.getElementById('bolaRapida').value;
+            if (!numero) {
+                mostrarNotificacion('Ingresa un número', 'warning');
+                return;
+            }
+            
+            const num = parseInt(numero);
+            if (num >= 1 && num <= 75) {
+                socket.emit('cantar-bola', { numero: num });
+                document.getElementById('bolaRapida').value = '';
+            } else {
+                mostrarNotificacion('Número debe ser 1-75', 'warning');
+            }
+        }
+        
+        function reiniciarJuego() {
+            if (confirm('¿Seguro que quieres reiniciar el juego? Se perderá el progreso actual.')) {
+                fetch('/admin/api/reset', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarNotificacion('Juego reiniciado', 'info');
+                            setTimeout(() => location.reload(), 1000);
+                        }
+                    })
+                    .catch(err => {
+                        mostrarNotificacion('Error al reiniciar', 'error');
+                    });
+            }
+        }
+        
+        function generarReporte() {
+            fetch('/admin/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    const reporte = `
+📊 REPORTE DEL JUEGO
+===================
+📅 Fecha: ${new Date().toLocaleString()}
+
+🎮 Estado: ${data.juego?.estado || 'N/A'}
+🎯 Modalidad: ${data.juego?.modalidad || 'N/A'}
+🎲 Bolas cantadas: ${data.juego?.bolasCantadas?.length || 0}
+👥 Jugadores conectados: ${data.cartonesConectados || 0}
+📈 Progreso promedio: ${data.progresoPromedio || 0}%
+
+🔄 Últimas bolas: ${data.juego?.bolasCantadas?.slice(-5).join(', ') || 'Ninguna'}
+                    `;
+                    
+                    console.log(reporte);
+                    alert('✅ Reporte generado - Revisa la consola (F12)');
+                })
+                .catch(err => {
+                    mostrarNotificacion('Error generando reporte', 'error');
+                });
+        }
+        
+        function verTodosLosCartones() {
+            window.location.href = '/admin/cartones';
+        }
+        
+        function refrescarJugadores() {
+            fetch('/admin/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('jugadoresConectados').textContent = data.cartonesConectados || 0;
+                })
+                .catch(err => {
+                    console.log('Error actualizando stats:', err);
+                });
+        }
+        
+        function reiniciarTodo() {
+            if (!confirm('⚠️ ¿Seguro? Esto reiniciará todos los cartones y desconectará jugadores. Solo funciona si no hay juego activo.')) {
+                return;
+            }
+            fetch('/api/admin/reiniciar-todo', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        mostrarNotificacion('✅ Todo reiniciado correctamente', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        mostrarNotificacion('❌ ' + data.error, 'error');
+                    }
+                })
+                .catch(err => {
+                    mostrarNotificacion('Error: ' + err.message, 'error');
+                });
+        }
+        setInterval(() => {
+            refrescarJugadores();
+        }, 10000);
+        document.getElementById('bolaRapida').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                cantarBola();
+            }
+        });
+    </script>
+</body>
+</html>

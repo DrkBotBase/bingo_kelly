@@ -1,0 +1,6 @@
+node_modules/
+cartones/
+scripts/
+.env
+proyect.txt
+package-lock.json

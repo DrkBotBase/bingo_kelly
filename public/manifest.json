@@ -1,0 +1,22 @@
+{
+  "name": "Bingo KELLY",
+  "short_name": "Bingo KELLY",
+  "description": "Juega y gana desde casa.",
+  "start_url": "/jugador/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/j-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/j-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
