@@ -81,26 +81,27 @@ module.exports = function(io) {
     });
     
     router.post('/api/reset', requireAdmin, async (req, res) => {
-        try {
-            await Juego.updateMany({ estado: { $ne: 'finalizado' } }, { estado: 'finalizado' });
-            
-            const nuevoJuego = new Juego({
-                estado: 'esperando',
-                bolasCantadas: [],
-                cartonesActivos: []
-            });
-            await nuevoJuego.save();
-            
-            await Carton.updateMany({}, { $set: { marcados: [] } });
-
-            io.emit('reiniciar-cartones'); 
-            io.emit('juego-terminado', { mensaje: '🏁 Nuevo juego iniciado' });
-
-            res.json({ success: true });
-        } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
-        }
+      try {
+          await Juego.updateMany({ estado: { $ne: 'finalizado' } }, { estado: 'finalizado' });
+          
+          const nuevoJuego = new Juego({
+              estado: 'esperando',
+              bolasCantadas: [],
+              cartonesActivos: [],
+              ganadores: []
+          });
+          await nuevoJuego.save();
+          await Promise.all([
+              Carton.updateMany({}, { $set: { marcados: [] } }),
+              Bola.deleteMany({})
+          ]);
+          io.emit('reiniciar-cartones'); 
+          res.json({ success: true });
+      } catch (error) {
+          res.status(500).json({ success: false, error: error.message });
+      }
     });
+
 
     router.get('/api/stats', requireAdmin, async (req, res) => {
         try {
