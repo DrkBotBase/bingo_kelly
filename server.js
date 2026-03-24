@@ -794,8 +794,8 @@ app.get('/api/jugador/estado/:codigo', async (req, res) => {
 });
 
 setInterval(() => {
-  fetch((info.DOMINIO || `http://localhost:${PORT}`) + '/ping')
-    .then(res => { /* console.log('Ping OK'); */ })
+  fetch((info.dominio || `http://localhost:${PORT}`) + '/ping')
+    .then(res => { /* console.log('Ping OK '); */ })
     .catch(err => console.error('Ping Error:', err.message));
 }, 14 * 60 * 1000);
 
