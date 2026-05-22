@@ -211,6 +211,9 @@
                 </div>
                 
                 <div class="flex items-center space-x-3">
+                    <button id="toggleAudio" class="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition" title="Activar/Desactivar Audio">
+                        <span id="audioIcon">🔊</span>
+                    </button>
                     <div id="estadoHeader" class="estado-badge 
                         <%= juego && juego.estado === 'jugando' ? 'bg-green-100 text-green-800 border-2 border-green-200' : 
                            juego && juego.estado === 'pausado' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' : 
@@ -568,6 +571,18 @@ document.addEventListener('click', function(event) {
         const socket = io();
         let juegoActivo = <%= juego && juego.estado === 'jugando' ? 'true' : 'false' %>;
         let juegoPausado = <%= juego && juego.estado === 'pausado' ? 'true' : 'false' %>;
+        let audioHabilitado = true;
+
+        function cantarBola(texto) {
+            if (!audioHabilitado) return;
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } catch (e) { console.error('Error TTS:', e); }
+        }
         
         function actualizarTiempo() {
             const ahora = new Date();
@@ -702,6 +717,8 @@ socket.on('reiniciar-cartones', () => {
         socket.on('nueva-bola', (data) => {
             const { numero, formato, letra, bolasCantadas } = data;
             
+            cantarBola(`${letra}, ${numero}`);
+
             document.getElementById('totalBolasDisplay').textContent = bolasCantadas.length;
             document.getElementById('ultimaBolaDisplay').textContent = formato;
             
@@ -872,6 +889,15 @@ socket.on('reiniciar-cartones', () => {
         
         setInterval(actualizarEstadisticas, 3000);
         actualizarEstadisticas();
+
+        document.getElementById('toggleAudio').addEventListener('click', () => {
+            audioHabilitado = !audioHabilitado;
+            const audioIcon = document.getElementById('audioIcon');
+            if (audioIcon) {
+                audioIcon.textContent = audioHabilitado ? '🔊' : '🔇';
+            }
+            mostrarNotificacion(audioHabilitado ? '🔊 Audio activado' : '🔇 Audio desactivado', 'info');
+        });
     </script>
 
     <script>

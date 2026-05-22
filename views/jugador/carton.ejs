@@ -43,7 +43,11 @@
                     </h1>
                 </div>
                 
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <button id="toggleAudio" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition" title="Activar/Desactivar Audio">
+                        <span id="audioIcon">🔊</span>
+                    </button>
+
                     <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold" id="modalidadDisplay">
                         <%= juego.modalidad || 'Esperando...' %>
                     </span>
@@ -274,6 +278,19 @@
     const socket = io();
     const numeroCarton = <%= carton.numeroCarton %>;
     let modoAutomatico = <%= carton.modoMarcado === 'automatico' ? 'true' : 'false' %>;
+    let audioHabilitado = true;
+
+    function cantarBola(texto) {
+        if (!audioHabilitado) return;
+        try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-ES';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) { console.error('Error TTS:', e); }
+    }
     let juegoActivo = <%= juego && juego.estado === 'jugando' ? 'true' : 'false' %>;
     
     let todasLasBolas = [];
@@ -568,6 +585,9 @@
         
         todasLasBolas = nuevasBolas;
         actualizarBolasFormateadas();
+
+        // Cantar la bola
+        cantarBola(`${letra}, ${numero}`);
         
         const ultimaBola = document.getElementById('ultimaBola');
         const totalBolas = document.getElementById('totalBolas');
@@ -702,6 +722,18 @@
             });
             
             mostrarNotificacion(`Cambiando modo...`, 'purple');
+        });
+    }
+
+    const toggleAudio = document.getElementById('toggleAudio');
+    if (toggleAudio) {
+        toggleAudio.addEventListener('click', () => {
+            audioHabilitado = !audioHabilitado;
+            const audioIcon = document.getElementById('audioIcon');
+            if (audioIcon) {
+                audioIcon.textContent = audioHabilitado ? '🔊' : '🔇';
+            }
+            mostrarNotificacion(audioHabilitado ? '🔊 Audio activado' : '🔇 Audio desactivado', 'blue');
         });
     }
     

@@ -1,45 +1,6 @@
 const Juego = require('../models/Juego');
 const Carton = require('../models/Carton');
 
-/*
-async function verificarGanador(juegoId, cartonIdEspecifico = null) {
-  try {
-    const juego = await Juego.findById(juegoId);
-    if (!juego || juego.estado !== 'jugando') return null;
-    
-    let query = {};
-    if (cartonIdEspecifico) {
-      query = { numeroCarton: cartonIdEspecifico };
-    } else {
-      query = { numeroCarton: { $in: juego.cartonesActivos } };
-    }
-    
-    const cartones = await Carton.find(query);
-    const bolasCantadas = juego.bolasCantadas;
-    
-    for (const carton of cartones) {
-      if (carton.modoMarcado === 'automatico') {
-        await marcarAutomatico(carton, bolasCantadas);
-      }
-      
-      const completo = verificarModalidad(carton, juego.modalidad);
-      
-      if (completo) {
-        console.log(`🏆 Ganador detectado: Cartón #${carton.numeroCarton} en modalidad ${juego.modalidad}`);
-        return {
-          cartonId: carton.numeroCarton,
-          tipo: juego.modalidad
-        };
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error en verificarGanador:", error);
-    return null;
-  }
-}
-*/
 async function verificarGanador(juegoId, cartonIdEspecifico = null) {
   try {
     const juego = await Juego.findById(juegoId);
@@ -53,10 +14,19 @@ async function verificarGanador(juegoId, cartonIdEspecifico = null) {
     const bolasCantadas = juego.bolasCantadas;
     
     let ganadores = [];
+    let cartonesParaActualizar = [];
     
     for (const carton of cartones) {
       if (carton.modoMarcado === 'automatico') {
-        await marcarAutomatico(carton, bolasCantadas);
+        const huboCambio = marcarAutomaticoSync(carton, bolasCantadas);
+        if (huboCambio) {
+          cartonesParaActualizar.push({
+            updateOne: {
+              filter: { _id: carton._id },
+              update: { $set: { marcados: carton.marcados } }
+            }
+          });
+        }
       }
       
       if (verificarModalidad(carton, juego.modalidad)) {
@@ -66,6 +36,11 @@ async function verificarGanador(juegoId, cartonIdEspecifico = null) {
         });
       }
     }
+
+    // Actualización masiva de cartones que cambiaron
+    if (cartonesParaActualizar.length > 0) {
+      await Carton.bulkWrite(cartonesParaActualizar);
+    }
     
     return ganadores.length > 0 ? ganadores : null;
     
@@ -73,6 +48,31 @@ async function verificarGanador(juegoId, cartonIdEspecifico = null) {
     console.error("Error en verificarGanador:", error);
     return null;
   }
+}
+
+/**
+ * Versión síncrona de marcar automático que solo modifica el objeto en memoria
+ */
+function marcarAutomaticoSync(carton, bolasCantadas) {
+  let huboCambio = false;
+  const marcadosSet = new Set(carton.marcados);
+  
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      if (i === 2 && j === 2) continue;
+      
+      const numero = carton.numeros[i][j];
+      const posicion = `${i}-${j}`;
+      
+      if (numero && bolasCantadas.includes(numero) && !marcadosSet.has(posicion)) {
+        carton.marcados.push(posicion);
+        marcadosSet.add(posicion);
+        huboCambio = true;
+      }
+    }
+  }
+  
+  return huboCambio;
 }
 
 function verificarModalidad(carton, modalidad) {
@@ -131,29 +131,6 @@ function verificarModalidad(carton, modalidad) {
     
     default:
       return false;
-  }
-}
-
-async function marcarAutomatico(carton, bolasCantadas) {
-  let huboCambio = false;
-  
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
-      if (i === 2 && j === 2) continue;
-      
-      const numero = carton.numeros[i][j];
-      const posicion = `${i}-${j}`;
-      
-      if (numero && bolasCantadas.includes(numero) && !carton.marcados.includes(posicion)) {
-        carton.marcados.push(posicion);
-        huboCambio = true;
-      }
-    }
-  }
-  
-  if (huboCambio) {
-    carton.markModified('marcados'); 
-    await carton.save();
   }
 }
 

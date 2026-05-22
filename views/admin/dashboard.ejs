@@ -314,6 +314,9 @@
                             <a href="/admin/cartones" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
                                 <i class="fa fa-ticket mr-2 text-blue-500"></i>Cartones
                             </a>
+                            <a href="/admin/historial" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl">
+                                <i class="fa-solid fa-clock-rotate-left mr-2 text-blue-500"></i>Historial
+                            </a>
                             <a href="/admin/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl">
                                 <i class="fa-solid fa-sign-out-alt mr-2"></i>Cerrar sesión
                             </a>
@@ -783,7 +786,7 @@
             if (!confirm('⚠️ ¿Seguro? Esto reiniciará todos los cartones y desconectará jugadores. Solo funciona si no hay juego activo.')) {
                 return;
             }
-            fetch('/api/admin/reiniciar-todo', { method: 'POST' })
+            fetch('/admin/api/reset', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {

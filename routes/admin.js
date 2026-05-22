@@ -3,6 +3,8 @@ const router = express.Router();
 const Juego = require('../models/Juego');
 const Carton = require('../models/Carton');
 const Usuario = require('../models/Usuario');
+const Historial = require('../models/Historial');
+const Bola = require('../models/Bola');
 const { info } = require('../config');
 
 const TOTAL_MAX_CARTONES = 1000; 
@@ -81,25 +83,41 @@ module.exports = function(io) {
     });
     
     router.post('/api/reset', requireAdmin, async (req, res) => {
-      try {
-          await Juego.updateMany({ estado: { $ne: 'finalizado' } }, { estado: 'finalizado' });
-          
-          const nuevoJuego = new Juego({
-              estado: 'esperando',
-              bolasCantadas: [],
-              cartonesActivos: [],
-              ganadores: []
-          });
-          await nuevoJuego.save();
-          await Promise.all([
-              Carton.updateMany({}, { $set: { marcados: [] } }),
-              Bola.deleteMany({})
-          ]);
-          io.emit('reiniciar-cartones'); 
-          res.json({ success: true });
-      } catch (error) {
-          res.status(500).json({ success: false, error: error.message });
-      }
+        try {
+            const juegoActivo = await Juego.findOne({ estado: 'jugando' });
+            if (juegoActivo) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'No se puede reiniciar mientras hay un juego activo' 
+                });
+            }
+
+            await Juego.updateMany({ estado: { $ne: 'finalizado' } }, { estado: 'finalizado' });
+            
+            const nuevoJuego = new Juego({
+                estado: 'esperando',
+                bolasCantadas: [],
+                cartonesActivos: [],
+                ganadores: []
+            });
+            await nuevoJuego.save();
+
+            await Promise.all([
+                Carton.updateMany({}, { 
+                    $set: { 
+                        marcados: [], 
+                        socketId: null,
+                        modoMarcado: 'manual'
+                    } 
+                }),
+                Bola.deleteMany({})
+            ]);
+
+            io.emit('reiniciar-cartones'); 
+            res.json({ success: true, message: 'Sistema reiniciado correctamente' });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
     });
 
 
@@ -310,21 +328,46 @@ module.exports = function(io) {
     router.post('/api/usuarios/desactivar', requireAdmin, async (req, res) => {
         try {
             const { codigo } = req.body;
-            
+
             const resultado = await Usuario.findOneAndUpdate(
                 { codigoAcceso: codigo.toUpperCase() },
                 { activo: false }
             );
-            
+
             if (!resultado) {
                 return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
             }
-            
+
             res.json({ success: true });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
         }
     });
-    
+
+    router.get('/historial', requireAdmin, async (req, res) => {
+        try {
+            const partidas = await Historial.find()
+                .sort({ fecha: -1 })
+                .limit(50)
+                .lean();
+
+            res.render('admin/historial', {
+                partidas: partidas,
+                name_page: info.name_page
+            });
+        } catch (error) {
+            res.status(500).render('errores', { mensaje: 'Error al cargar el historial', name_page: info.name_page });
+        }
+    });
+
+    router.delete('/api/historial/limpiar', requireAdmin, async (req, res) => {
+        try {
+            await Historial.deleteMany({});
+            res.json({ success: true, message: 'Historial vaciado correctamente' });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
     return router;
-}
+    }
