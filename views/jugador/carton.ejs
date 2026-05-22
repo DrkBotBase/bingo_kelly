@@ -584,6 +584,7 @@
         const { numero, formato, letra, bolasCantadas: nuevasBolas } = data;
         
         todasLasBolas = nuevasBolas;
+        juegoActivo = true;
         actualizarBolasFormateadas();
 
         // Cantar la bola
@@ -629,11 +630,11 @@
         juegoActivo = false;
         
         if (data.cartonId === numeroCarton) {
-            alert('🎉 ¡FELICIDADES! Has ganado el bingo');
-            confeti();
+            setTimeout(() => {
+                alert('🎉 ¡FELICIDADES! Has ganado el bingo');
+                confeti();
+            }, 500);
         }
-        
-        localStorage.removeItem(`carton_${numeroCarton}_marcados`);
     });
     
     socket.on('marcado-exitoso', (data) => {

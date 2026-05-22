@@ -433,12 +433,8 @@ function marcarAutomatico(numero) {
                 }
                 numerosMarcados[carton.numeroCarton].add(posicion);
                 huboCambios = true;
-
-                socket.emit('marcar-manual-multi', {
-                    codigo: usuario.codigo,
-                    cartonId: carton.numeroCarton,
-                    posicion: posicion
-                });
+                // No emitimos marcar-manual-multi aquí porque el servidor ya marcó el cartón
+                // al cantar la bola, y esto evita saturar el socket.
             }
         }
     });

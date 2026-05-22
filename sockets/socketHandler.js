@@ -82,6 +82,13 @@ module.exports = function(io, sessionMiddleware) {
                 }
                 
                 await carton.save();
+
+                // Asegurar que el cartón esté en la lista de activos si hay juego en curso
+                if (juegoActivo && !juego.cartonesActivos.includes(numeroCarton)) {
+                    juego.cartonesActivos.push(numeroCarton);
+                    await juego.save();
+                }
+
                 socket.join(`carton-${numeroCarton}`);
                 
                 socket.emit('estado-inicial', {
@@ -257,26 +264,35 @@ module.exports = function(io, sessionMiddleware) {
                 await juego.save();
                 await Bola.create({ juegoId: juego._id, numero });
 
-                let colBusqueda = Math.floor((numero - 1) / 15);
+                // Marcar la bola en todos los cartones (en base de datos)
+                const colBusqueda = Math.floor((numero - 1) / 15);
+                const bulkOps = [];
                 for (let fila = 0; fila < 5; fila++) {
                     const posicionStr = `${fila}-${colBusqueda}`;
-                    await Carton.updateMany(
-                        { 
-                            numeroCarton: { $in: juego.cartonesActivos },
-                            [`numeros.${fila}.${colBusqueda}`]: numero,
-                            marcados: { $ne: posicionStr }
-                        },
-                        { $push: { marcados: posicionStr } }
-                    );
+                    bulkOps.push({
+                        updateMany: {
+                            filter: { 
+                                [`numeros.${fila}.${colBusqueda}`]: numero,
+                                marcados: { $ne: posicionStr }
+                            },
+                            update: { $push: { marcados: posicionStr } }
+                        }
+                    });
+                }
+                
+                if (bulkOps.length > 0) {
+                    await Carton.bulkWrite(bulkOps);
                 }
 
                 const formato = bingoHelpers.numeroAFormatoBingo(numero);
                 const letra = bingoHelpers.getLetraBingo(numero);
                 
+                // Notificar nueva bola inmediatamente
                 io.emit('nueva-bola', { 
                     numero, formato, letra, bolasCantadas: juego.bolasCantadas
                 });
                 
+                // Verificar ganadores después de actualizar la DB
                 const ganadores = await verificarGanador(juego._id);
                 if (ganadores && ganadores.length > 0) {
                     juego.estado = 'finalizado';
@@ -296,12 +312,15 @@ module.exports = function(io, sessionMiddleware) {
                         ? `🎉 ¡BINGO MÚLTIPLE! Ganaron los cartones: ${listaIds}`
                         : `🎉 ¡BINGO! Ganó el cartón #${ganadores[0].cartonId}`;
                     
-                    io.emit('juego-terminado', {
-                        mensaje: mensajeFinal,
-                        ganadores: ganadores,
-                        cartonId: ganadores[0].cartonId,
-                        tipo: ganadores[0].tipo
-                    });
+                    // Retraso para asegurar que los clientes vean la bola marcada antes del aviso de ganador
+                    setTimeout(() => {
+                        io.emit('juego-terminado', {
+                            mensaje: mensajeFinal,
+                            ganadores: ganadores,
+                            cartonId: ganadores[0].cartonId,
+                            tipo: ganadores[0].tipo
+                        });
+                    }, 1500);
                 }
             } catch (error) { console.error('❌ Error crítico cantando bola:', error); }
         });
@@ -497,6 +516,18 @@ module.exports = function(io, sessionMiddleware) {
                 
                 socket.join(`usuario-${usuario.codigoAcceso}`);
                 const juego = await Juego.findOne().sort({ createdAt: -1 });
+
+                // Si el juego está en curso, añadir sus cartones a la lista de activos
+                if (juego && juego.estado === 'jugando') {
+                    let huboCambio = false;
+                    usuario.cartonesAsignados.forEach(num => {
+                        if (!juego.cartonesActivos.includes(num)) {
+                            juego.cartonesActivos.push(num);
+                            huboCambio = true;
+                        }
+                    });
+                    if (huboCambio) await juego.save();
+                }
                 
                 socket.emit('acceso-exitoso', {
                     usuario: {
